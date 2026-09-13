@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Homestead Valley Wildfire StoryMap — Prototype</title>
+
+  <!-- Theme fonts (heading/body pairing configurable via data/chapters.json
+       "theme.fonts" - these Google Fonts links just need to match whatever
+       family names are set there). -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Noto+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet" />
+
+  <link href="https://unpkg.com/maplibre-gl@^4/dist/maplibre-gl.css" rel="stylesheet" />
+  <link href="css/style.css" rel="stylesheet" />
+</head>
+<body>
+
+  <div id="header">
+    <h1>Homestead Valley Wildfire StoryMap</h1>
+  </div>
+
+  <div id="map"></div>
+  <div id="legend"></div>
+  <div id="story"></div>
+  <footer id="footer"></footer>
+
+  <script src="https://unpkg.com/maplibre-gl@^4/dist/maplibre-gl.js"></script>
+  <script src="js/story.js"></script>
+</body>
+</html>

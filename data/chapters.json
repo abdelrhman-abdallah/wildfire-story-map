@@ -1,0 +1,153 @@
+{
+  "settings": {
+    "pauseVideoOffscreen": true,
+    "legendPosition": "right"
+  },
+  "theme": {
+    "colors": {
+      "primary": "#c0392b",
+      "secondary": "#e67e22",
+      "accent": "#2c3e91",
+      "dark": "#1c1c1c",
+      "light": "#fdf6f0"
+    },
+    "fonts": {
+      "heading": "'Poppins', 'Segoe UI', sans-serif",
+      "body": "'Noto Serif', Georgia, serif"
+    }
+  },
+  "legend": {
+    "csa14": {
+      "title": "Homestead Valley Boundary",
+      "items": [
+        { "label": "CSA 14 boundary (placeholder shape — real County GIS data pending)", "color": "#1c1c1c" }
+      ]
+    },
+    "risk": {
+      "title": "Sample Risk Zones (dummy)",
+      "items": [
+        { "label": "High Risk (dummy)", "color": "#c0392b" },
+        { "label": "Moderate Risk (dummy)", "color": "#e67e22" }
+      ]
+    },
+    "points": {
+      "title": "Sample Points (dummy)",
+      "items": [
+        { "label": "Sample point (dummy)", "color": "#2c3e91" }
+      ]
+    }
+  },
+  "footer": {
+    "title": "Take the Next Step, Together",
+    "text": "This StoryMap is a living project — as new mapping, photos, and video come in from the community, this page will grow with them.",
+    "links": [
+      { "label": "Ember Ready sign-up (placeholder)", "url": "#" },
+      { "label": "Find your Block Captain (placeholder)", "url": "#" },
+      { "label": "Homestead Valley Land Trust", "url": "#" },
+      { "label": "Homestead Valley Safety Committee", "url": "#" }
+    ],
+    "credit": "Built for the Homestead Valley community with MapLibre GL JS — an open-source alternative to Esri ArcGIS StoryMaps."
+  },
+  "chapters": [
+    {
+      "id": "title",
+      "isTitleScreen": true,
+      "icon": "flame",
+      "dummy": false,
+      "eyebrow": "A StoryMap for Homestead Valley",
+      "title": "Living With Wildfire in Homestead Valley",
+      "description": "An interactive guide to how wildfire moves through our landscape — and what our community can do about it, together.",
+      "image": {
+        "src": "media/HV_Pixie_Panoramic.jpg",
+        "alt": "Panoramic view over Homestead Valley"
+      },
+      "mapPosition": "none",
+      "location": { "center": [-122.5477, 37.9028], "zoom": 10.5, "pitch": 0, "bearing": 0 },
+      "layers": { "risk": false, "points": false, "csa14": false }
+    },
+    {
+      "id": "welcome",
+      "icon": "home",
+      "dummy": true,
+      "title": "Welcome to Homestead Valley",
+      "description": "DUMMY TEXT — Homestead Valley is an unincorporated community in Southern Marin, tucked between Mill Valley and Mount Tamalpais State Park. This opening chapter is a stand-in for the real place-and-history narrative.",
+      "image": {
+        "src": "media/HV Panoramic.jpg",
+        "alt": "Panoramic view of Homestead Valley (sample photo embed)",
+        "caption": "Sample photo embed 1 — Homestead Valley panorama."
+      },
+      "mapPosition": "none",
+      "location": { "center": [-122.5477, 37.9028], "zoom": 12, "pitch": 0, "bearing": 0 },
+      "layers": { "risk": false, "points": false, "csa14": false }
+    },
+    {
+      "id": "where-is-homestead",
+      "icon": "map-pin",
+      "dummy": false,
+      "title": "Where Homestead Valley Sits",
+      "description": "Homestead Valley is an unincorporated community of roughly 900 homes in Southern Marin County, tucked into wooded canyons between Mill Valley and Mount Tamalpais State Park. The dark dashed line on the map is a placeholder standing in for the real Marin County CSA 14 service-area boundary — the official footprint of the community that this entire StoryMap is built around.",
+      "image": {
+        "src": "media/HV_Stolte_Tam.jpg",
+        "alt": "View toward Mount Tamalpais from within Homestead Valley",
+        "caption": "Looking toward Mount Tamalpais from within Homestead Valley."
+      },
+      "mapPosition": "right",
+      "location": { "center": [-122.5472, 37.8956], "zoom": 11.2, "pitch": 0, "bearing": 0 },
+      "layers": { "risk": false, "points": false, "csa14": true }
+    },
+    {
+      "id": "csa14-boundary",
+      "icon": "map-pin",
+      "dummy": false,
+      "title": "Zooming Into the CSA 14 Boundary",
+      "description": "This is Marin County Service Area 14 — Homestead Valley's official boundary, covering about 469 acres. It's the same line the County and local fire agencies use to define the community. The shape shown here is a placeholder; it will be swapped for the real boundary converted from the County's own GIS data.",
+      "image": {
+        "src": "media/CSA 14 Boundary Map.png",
+        "alt": "Marin County's official reference map of the CSA 14 boundary",
+        "caption": "The County's official CSA 14 reference map — soon to be a live, zoomable layer above."
+      },
+      "mapPosition": "left",
+      "location": { "center": [-122.5472, 37.8956], "zoom": 13.4, "pitch": 35, "bearing": 20 },
+      "layers": { "risk": false, "points": false, "csa14": true }
+    },
+    {
+      "id": "landscape",
+      "icon": "tree",
+      "dummy": true,
+      "title": "Understanding the Risk Landscape",
+      "description": "DUMMY TEXT — This chapter is where real risk layers would live: topography, slope, aspect, wind-direction scenarios, and hand-mapped overlays like eucalyptus groves. The shaded polygons and markers below (see legend) are placeholder GeoJSON standing in for that real GIS data.",
+      "mapPosition": "right",
+      "location": { "center": [-122.556, 37.904], "zoom": 14, "pitch": 45, "bearing": -10 },
+      "layers": { "risk": true, "points": true, "csa14": false }
+    },
+    {
+      "id": "see-it-in-motion",
+      "icon": "wind",
+      "dummy": true,
+      "title": "See It In Motion",
+      "description": "DUMMY TEXT — A chapter can also carry video. Below is the client's own sample video file embedded directly, plus a real YouTube video embedded from a pasted URL.",
+      "video": {
+        "localSrc": "media/HV_PANORAMIC_VIDEO_1.mov",
+        "youtubeUrl": "https://www.youtube.com/shorts/9rzzhns6Kfw"
+      },
+      "mapPosition": "none",
+      "location": { "center": [-122.556, 37.904], "zoom": 14, "pitch": 45, "bearing": -10 },
+      "layers": { "risk": false, "points": false, "csa14": false }
+    },
+    {
+      "id": "take-action",
+      "icon": "shield",
+      "dummy": true,
+      "title": "Take Action Together",
+      "description": "DUMMY TEXT — Closing call-to-action chapter. Real version would link to Ember Ready sign-up, Block Captain contacts, and HVLT/Safety Committee resources.",
+      "image": {
+        "src": "media/Homestead Valley_ Then and Now.png",
+        "alt": "Homestead Valley then and now graphic (sample photo embed)",
+        "caption": "Sample photo embed 2 — Then & Now graphic."
+      },
+      "mapPosition": "none",
+      "location": { "center": [-122.5477, 37.9028], "zoom": 11.5, "pitch": 0, "bearing": 0 },
+      "layers": { "risk": false, "points": false, "csa14": false }
+    }
+  ]
+}

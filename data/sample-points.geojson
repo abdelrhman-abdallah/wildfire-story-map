@@ -1,0 +1,21 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Sample Point A (DUMMY)",
+        "note": "Placeholder marker only. Stand-in for something like an evacuation route waypoint, a primary chimney/ridge point, or a Block Captain location."
+      },
+      "geometry": { "type": "Point", "coordinates": [-122.5580, 37.9040] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Sample Point B (DUMMY)",
+        "note": "Placeholder marker only."
+      },
+      "geometry": { "type": "Point", "coordinates": [-122.5540, 37.9025] }
+    }
+  ]
+}
