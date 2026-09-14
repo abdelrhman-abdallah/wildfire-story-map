@@ -65,10 +65,148 @@ body.map-pos-none #map {
   pointer-events: none;
 }
 
+/* ---------------------------------------------------------------------
+   Custom map controls - Esri-style white rounded-square buttons:
+   fullscreen top-right, home + zoom in/out stacked bottom-right.
+   Replaces MapLibre's default NavigationControl (see initMapControls()
+   in js/story.js).
+--------------------------------------------------------------------- */
+.map-controls {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.map-control-btn {
+  pointer-events: auto;
+  width: 2.25rem;
+  height: 2.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  border: none;
+  border-radius: 4px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  color: var(--color-dark);
+  cursor: pointer;
+  padding: 0.4rem;
+  transition: background 0.15s ease;
+}
+
+.map-control-btn svg {
+  width: 100%;
+  height: 100%;
+}
+
+.map-control-btn:hover {
+  background: #f2f2f2;
+}
+
+.map-control-fullscreen {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+}
+
+.map-control-stack {
+  position: absolute;
+  bottom: 1.5rem;
+  right: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.6rem;
+}
+
+.map-control-zoom-group {
+  display: flex;
+  flex-direction: column;
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
+.map-control-zoom-group .map-control-btn {
+  box-shadow: none;
+  border-radius: 0;
+}
+
+.map-control-zoom-group .map-control-btn:first-child {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+}
+
 #story {
   position: relative;
   z-index: 1;
   pointer-events: none;
+}
+
+/* ---------------------------------------------------------------------
+   Media sidecar - a second docked panel (mirrors #map's left/right/none
+   docking) for chapters that want images/video positioned like the map,
+   driven by body.media-pos-* classes set in placeMediaForChapter().
+--------------------------------------------------------------------- */
+#media-sidecar {
+  position: fixed;
+  top: 0;
+  height: 100vh;
+  z-index: 0;
+  background: var(--color-dark);
+  opacity: 0;
+  pointer-events: none;
+  left: 0;
+  width: 100%;
+  transition: opacity 0.5s ease, left 0.5s ease, width 0.5s ease;
+}
+
+body.media-pos-left #media-sidecar {
+  left: 0;
+  width: 58%;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+body.media-pos-right #media-sidecar {
+  left: 42%;
+  width: 58%;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+body.media-pos-none #media-sidecar {
+  opacity: 0;
+  pointer-events: none;
+}
+
+#media-sidecar .media-carousel {
+  height: 100%;
+}
+
+#media-sidecar .media-carousel-track,
+#media-sidecar .media-carousel-item {
+  height: 100%;
+}
+
+#media-sidecar .media-carousel-item img,
+#media-sidecar .media-carousel-item video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 0;
+  margin-top: 0;
+}
+
+#media-sidecar figcaption {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  margin: 0;
+  padding: 0.75rem 1rem;
+  background: linear-gradient(to top, rgba(0,0,0,0.65), rgba(0,0,0,0));
+  color: #fff;
 }
 
 .chapter {
@@ -146,6 +284,45 @@ body.map-pos-none #map {
   font-family: var(--font-heading);
 }
 
+.chapter-content .pro-tip {
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  border-left: 3px solid var(--color-secondary);
+  background: rgba(230, 126, 34, 0.08);
+  border-radius: 0 6px 6px 0;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.chapter-content .pro-tip strong {
+  display: block;
+  font-family: var(--font-heading);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-secondary);
+  margin-bottom: 0.2rem;
+}
+
+.chapter-content .map-placeholder-note {
+  margin-top: 0.85rem;
+  font-size: 0.78rem;
+  font-style: italic;
+  color: #777;
+  line-height: 1.45;
+}
+
+.chapter-content .key-line {
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  background: var(--color-dark);
+  color: #fff;
+  border-radius: 6px;
+  font-family: var(--font-heading);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
 .chapter-content img {
   width: 100%;
   border-radius: 6px;
@@ -175,6 +352,92 @@ body.map-pos-none #map {
 .video-block h3 {
   font-size: 0.85rem;
   margin-bottom: 0.25rem;
+}
+
+/* ---------------------------------------------------------------------
+   Media carousel - reusable image/video gallery, used both inline
+   inside .chapter-content and docked inside #media-sidecar.
+--------------------------------------------------------------------- */
+.media-carousel {
+  position: relative;
+  margin-top: 0.75rem;
+  overflow: hidden;
+  border-radius: 6px;
+}
+
+.media-carousel-track {
+  display: flex;
+  transition: transform 0.4s ease;
+}
+
+.media-carousel-item {
+  position: relative;
+  flex: none;
+  width: 100%;
+  /* <figure> has a browser-default margin (e.g. 1em 40px) - left in place,
+     it inflates each slide's outer flex width past 100%, so N * 100%
+     translateX no longer lines up with slide boundaries and you see a
+     sliver of the neighboring slide instead of a clean cut. */
+  margin: 0;
+}
+
+.media-carousel-item img,
+.media-carousel-item video,
+.media-carousel-item iframe {
+  margin-top: 0;
+  border-radius: 0;
+}
+
+.media-carousel-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+  transition: background 0.2s ease;
+}
+
+.media-carousel-arrow:hover {
+  background: var(--color-primary);
+}
+
+.media-carousel-prev { left: 0.6rem; }
+.media-carousel-next { right: 0.6rem; }
+
+.media-carousel-dots {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0.6rem;
+  display: flex;
+  justify-content: center;
+  gap: 0.4rem;
+  z-index: 1;
+}
+
+.media-carousel-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.55);
+  cursor: pointer;
+  padding: 0;
+}
+
+.media-carousel-dot.active {
+  background: #fff;
 }
 
 /* ---------------------------------------------------------------------
@@ -284,6 +547,61 @@ body.map-pos-none #map {
 }
 
 /* ---------------------------------------------------------------------
+   Toolbar - persistent chapter nav. Sits just below the brand header,
+   listing every chapter's short "navLabel" as a clickable pill; clicking
+   one scrolls straight to that section (see renderToolbar()/updateToolbar()
+   in js/story.js). The active chapter's pill is highlighted as the reader
+   scrolls, driven by the same IntersectionObserver that drives the map.
+--------------------------------------------------------------------- */
+#toolbar {
+  position: sticky;
+  top: 2.5rem;
+  left: 0;
+  width: 100%;
+  z-index: 4;
+  display: flex;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.5rem 1rem;
+  background: rgba(28, 28, 28, 0.55);
+  backdrop-filter: blur(6px);
+  overflow-x: auto;
+  scrollbar-width: none;
+  pointer-events: auto;
+}
+
+#toolbar::-webkit-scrollbar {
+  display: none;
+}
+
+.toolbar-item {
+  flex: none;
+  font-family: var(--font-heading);
+  font-size: 0.78rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  color: rgba(255, 255, 255, 0.85);
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 999px;
+  padding: 0.4rem 0.9rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.toolbar-item:hover {
+  border-color: rgba(255, 255, 255, 0.7);
+  color: #fff;
+}
+
+.toolbar-item.active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+}
+
+/* ---------------------------------------------------------------------
    Legend
 --------------------------------------------------------------------- */
 #legend {
@@ -294,9 +612,60 @@ body.map-pos-none #map {
   background: rgba(255, 255, 255, 0.95);
   border-radius: 8px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
-  padding: 0.5rem 0.9rem;
+  padding: 0.5rem 2rem 0.5rem 0.9rem;
   max-width: 220px;
   font-size: 0.8rem;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+#legend.legend-closed {
+  display: none;
+}
+
+.legend-close {
+  position: absolute;
+  top: 0.35rem;
+  right: 0.5rem;
+  width: 1.25rem;
+  height: 1.25rem;
+  border: none;
+  background: transparent;
+  color: #666;
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+}
+
+.legend-close:hover {
+  color: var(--color-primary);
+}
+
+.legend-reopen {
+  position: fixed;
+  bottom: 1.5rem;
+  left: 1.5rem;
+  z-index: 2;
+  display: none;
+  font-family: var(--font-heading);
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--color-dark);
+  background: rgba(255, 255, 255, 0.95);
+  border: none;
+  border-radius: 999px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+}
+
+.legend-reopen.visible {
+  display: inline-block;
+}
+
+.legend-reopen.legend-right {
+  left: auto;
+  right: 1.5rem;
 }
 
 .legend-section {

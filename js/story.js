@@ -13,6 +13,10 @@ function applySettings(userSettings) {
   Object.assign(SETTINGS, userSettings || {});
 }
 
+// Tracks whichever chapter is currently active in the viewport - read by
+// the map's "home" control to know what view to reset back to.
+let currentChapterId = null;
+
 // --- Theme (colors + fonts) -----------------------------------------------
 // Applied as CSS custom properties so css/style.css can reference
 // var(--color-primary), var(--font-heading), etc. Falls back to whatever
@@ -58,6 +62,23 @@ const ICONS = {
   shield: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
     <path d="M12 2 4 5v6c0 5 3.4 8.7 8 11 4.6-2.3 8-6 8-11V5l-8-3z" fill="currentColor"/>
     <path d="M8.5 12.2 11 14.7l4.8-5.2" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`,
+  mountain: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M3 20 9 8l4 6 2-3 6 9H3z" fill="currentColor"/>
+  </svg>`,
+  layers: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M12 3 2 9l10 6 10-6-10-6z" fill="currentColor"/>
+    <path d="M2 15l10 6 10-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`,
+  route: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M5 21 9 3h6l4 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M12 3v18" stroke="currentColor" stroke-width="2" stroke-dasharray="2 3" stroke-linecap="round"/>
+  </svg>`,
+  footprints: `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="8" cy="7" rx="2.4" ry="3.2" fill="currentColor"/>
+    <ellipse cx="16" cy="14" rx="2.4" ry="3.2" fill="currentColor"/>
+    <circle cx="8" cy="12.2" r="1.1" fill="currentColor"/>
+    <circle cx="16" cy="19.2" r="1.1" fill="currentColor"/>
   </svg>`
 };
 
@@ -91,11 +112,142 @@ function parseYouTubeId(url) {
   return null;
 }
 
+// --- Media (images/videos) -------------------------------------------------
+// A chapter can carry one or more media items, each either an image or a
+// video (local file and/or YouTube embed). The legacy single "image"/"video"
+// chapter fields are normalized into that same array shape so both old and
+// new chapters.json entries render through the one carousel implementation.
+function normalizeMedia(chapter) {
+  if (Array.isArray(chapter.media) && chapter.media.length) return chapter.media;
+
+  const media = [];
+  if (chapter.image) {
+    media.push({ type: "image", ...chapter.image });
+  }
+  if (chapter.video) {
+    if (chapter.video.localSrc) {
+      media.push({
+        type: "video",
+        localSrc: chapter.video.localSrc,
+        caption: "Local video embed (client-supplied file)"
+      });
+    }
+    if (chapter.video.youtubeUrl) {
+      media.push({
+        type: "video",
+        youtubeUrl: chapter.video.youtubeUrl,
+        caption: "YouTube embed"
+      });
+    }
+  }
+  return media;
+}
+
+function renderMediaItemInner(item) {
+  if (item.type === "video") {
+    if (item.youtubeUrl) {
+      const ytId = parseYouTubeId(item.youtubeUrl);
+      if (!ytId) {
+        return `<p><em>Could not parse a video ID from "${item.youtubeUrl}".</em></p>`;
+      }
+      return `
+        <iframe
+          class="yt-embed"
+          src="https://www.youtube.com/embed/${ytId}?enablejsapi=1"
+          title="YouTube video"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowfullscreen>
+        </iframe>
+      `;
+    }
+    if (item.localSrc) {
+      return `
+        <video controls preload="none">
+          <source src="${item.localSrc}" type="video/quicktime" />
+          Your browser may not support inline .mov playback - swap for an
+          .mp4 if this doesn't play.
+        </video>
+      `;
+    }
+    return "";
+  }
+  return `<img src="${item.src}" alt="${item.alt || ""}" loading="lazy" />`;
+}
+
+// Builds a self-contained gallery: a sliding track of media items, plus
+// prev/next arrows and dot indicators once there's more than one item. Used
+// both inline (inside a chapter-content card) and in the full-bleed sidecar
+// panel (see #media-sidecar / placeMediaForChapter()) - a chapter can send
+// its media either place via "mediaPosition": "inline" | "left" | "right".
+function renderMediaCarousel(mediaItems) {
+  const wrap = document.createElement("div");
+  wrap.className = "media-carousel";
+  if (!mediaItems.length) return wrap;
+
+  const track = document.createElement("div");
+  track.className = "media-carousel-track";
+
+  mediaItems.forEach((item) => {
+    const slide = document.createElement("figure");
+    slide.className = "media-carousel-item";
+    slide.innerHTML = `
+      ${renderMediaItemInner(item)}
+      ${item.caption ? `<figcaption>${item.caption}</figcaption>` : ""}
+    `;
+    track.appendChild(slide);
+  });
+
+  wrap.appendChild(track);
+
+  if (mediaItems.length > 1) {
+    const dotsWrap = document.createElement("div");
+    dotsWrap.className = "media-carousel-dots";
+
+    const dots = mediaItems.map((_, i) => {
+      const dot = document.createElement("button");
+      dot.type = "button";
+      dot.className = "media-carousel-dot" + (i === 0 ? " active" : "");
+      dot.setAttribute("aria-label", `Go to slide ${i + 1}`);
+      dotsWrap.appendChild(dot);
+      return dot;
+    });
+
+    let index = 0;
+    const goTo = (i) => {
+      index = (i + mediaItems.length) % mediaItems.length;
+      track.style.transform = `translateX(-${index * 100}%)`;
+      dots.forEach((dot, di) => dot.classList.toggle("active", di === index));
+    };
+    dots.forEach((dot, i) => dot.addEventListener("click", () => goTo(i)));
+
+    const prevBtn = document.createElement("button");
+    prevBtn.type = "button";
+    prevBtn.className = "media-carousel-arrow media-carousel-prev";
+    prevBtn.setAttribute("aria-label", "Previous");
+    prevBtn.innerHTML = "&#8249;";
+    prevBtn.addEventListener("click", () => goTo(index - 1));
+
+    const nextBtn = document.createElement("button");
+    nextBtn.type = "button";
+    nextBtn.className = "media-carousel-arrow media-carousel-next";
+    nextBtn.setAttribute("aria-label", "Next");
+    nextBtn.innerHTML = "&#8250;";
+    nextBtn.addEventListener("click", () => goTo(index + 1));
+
+    wrap.appendChild(prevBtn);
+    wrap.appendChild(nextBtn);
+    wrap.appendChild(dotsWrap);
+  }
+
+  return wrap;
+}
+
 // --- Chapter rendering ---------------------------------------------------
 // Two distinct shapes: a full-bleed hero/title screen (isTitleScreen), and
 // regular chapters, which render as a floating text card. Where that card
-// sits (and which side the persistent map docks to) is driven per-chapter
-// by "mapPosition": "left" | "right" | "none" - see placeMapForChapter().
+// sits is driven by whichever docked side panel the chapter is using - the
+// persistent map ("mapPosition") or the media sidecar ("mediaPosition") -
+// see placeMapForChapter()/placeMediaForChapter().
 function renderHeroChapter(story, chapter) {
   const section = document.createElement("section");
   section.className = "chapter hero";
@@ -122,7 +274,17 @@ function renderChapter(story, chapter) {
   const section = document.createElement("section");
   section.className = "chapter";
   section.id = chapter.id;
-  section.dataset.mapPosition = chapter.mapPosition || "none";
+
+  // The text card docks opposite whichever side panel is active for this
+  // chapter - the map if "mapPosition" is set, otherwise the media sidecar
+  // if "mediaPosition" is "left"/"right", otherwise centered ("none").
+  const dockPosition =
+    chapter.mapPosition && chapter.mapPosition !== "none"
+      ? chapter.mapPosition
+      : chapter.mediaPosition && chapter.mediaPosition !== "inline"
+      ? chapter.mediaPosition
+      : "none";
+  section.dataset.mapPosition = dockPosition;
 
   const content = document.createElement("div");
   content.className = "chapter-content";
@@ -137,57 +299,24 @@ function renderChapter(story, chapter) {
       ${renderIcon(chapter.icon)}
       <h2>${chapter.title}</h2>
     </div>
-    <p>${chapter.description}</p>
+    <div class="chapter-body">${chapter.description}</div>
   `;
 
-  if (chapter.image) {
-    const figure = document.createElement("figure");
-    figure.innerHTML = `
-      <img src="${chapter.image.src}" alt="${chapter.image.alt}" loading="lazy" />
-      ${chapter.image.caption ? `<figcaption>${chapter.image.caption}</figcaption>` : ""}
-    `;
-    content.appendChild(figure);
+  const mediaPosition = chapter.mediaPosition || "inline";
+  if (mediaPosition === "inline") {
+    const media = normalizeMedia(chapter);
+    if (media.length) content.appendChild(renderMediaCarousel(media));
   }
 
-  if (chapter.video) {
-    const videoWrap = document.createElement("div");
-    let html = "";
-
-    if (chapter.video.localSrc) {
-      html += `
-        <div class="video-block">
-          <h3>Local video embed (client-supplied file)</h3>
-          <video controls preload="none">
-            <source src="${chapter.video.localSrc}" type="video/quicktime" />
-            Your browser may not support inline .mov playback - swap for an
-            .mp4 if this doesn't play.
-          </video>
-        </div>
-      `;
-    }
-
-    if (chapter.video.youtubeUrl) {
-      const ytId = parseYouTubeId(chapter.video.youtubeUrl);
-      if (ytId) {
-        html += `
-          <div class="video-block">
-            <h3>YouTube embed</h3>
-            <iframe
-              class="yt-embed"
-              src="https://www.youtube.com/embed/${ytId}?enablejsapi=1"
-              title="YouTube video"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowfullscreen>
-            </iframe>
-          </div>
-        `;
-      } else {
-        html += `<p><em>Could not parse a video ID from "${chapter.video.youtubeUrl}".</em></p>`;
-      }
-    }
-
-    videoWrap.innerHTML = html;
-    content.appendChild(videoWrap);
+  // Optional short caveat noting that the map layer/overlay for this chapter
+  // is a stand-in until the client supplies real GIS data (see chapter.mapNote
+  // in data/chapters.json) - distinct from the "dummy": true tag, since the
+  // narrative copy itself can be final even when its map treatment isn't yet.
+  if (chapter.mapNote) {
+    const note = document.createElement("p");
+    note.className = "map-placeholder-note";
+    note.textContent = chapter.mapNote;
+    content.appendChild(note);
   }
 
   section.appendChild(content);
@@ -202,6 +331,44 @@ function renderChapters(chapters) {
     } else {
       renderChapter(story, chapter);
     }
+  });
+}
+
+// --- Toolbar (chapter navigation) ------------------------------------------
+// A nav bar listing every chapter (its short "navLabel"), clickable to jump
+// straight to that section, with the current chapter highlighted as the
+// reader scrolls - same idea as ArcGIS StoryMaps' section nav / table of
+// contents. It's inserted directly after the hero section (see bootstrap())
+// and uses "position: sticky" in CSS, so it scrolls normally underneath the
+// hero and only locks to the top once the reader scrolls past it.
+function renderToolbar(chapters) {
+  const toolbar = document.createElement("nav");
+  toolbar.id = "toolbar";
+  toolbar.setAttribute("aria-label", "Story chapters");
+
+  toolbar.innerHTML = chapters
+    .map(
+      (chapter) => `
+        <button type="button" class="toolbar-item" data-target="${chapter.id}">
+          ${chapter.navLabel || chapter.title}
+        </button>
+      `
+    )
+    .join("");
+
+  toolbar.querySelectorAll(".toolbar-item").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const target = document.getElementById(btn.dataset.target);
+      if (target) target.scrollIntoView({ behavior: "smooth" });
+    });
+  });
+
+  return toolbar;
+}
+
+function updateToolbar(activeChapterId) {
+  document.querySelectorAll(".toolbar-item").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.target === activeChapterId);
   });
 }
 
@@ -259,12 +426,34 @@ function setupVideoPauseOnScrollOut() {
 // --- Legend ---------------------------------------------------------------
 function renderLegendShell(legendConfig) {
   const legend = document.getElementById("legend");
-  if (!legendConfig) return;
+  const reopenBtn = document.getElementById("legend-reopen");
+  if (!legendConfig || !legend) return;
 
-  legend.classList.toggle("legend-right", SETTINGS.legendPosition === "right");
+  const onRight = SETTINGS.legendPosition === "right";
+  legend.classList.toggle("legend-right", onRight);
+  if (reopenBtn) reopenBtn.classList.toggle("legend-right", onRight);
+
   // Start hidden - updateLegend() reveals it once a chapter with an active
   // layer scrolls into view, so there's no empty box flash before then.
   legend.classList.add("legend-hidden");
+
+  const closeBtn = document.createElement("button");
+  closeBtn.type = "button";
+  closeBtn.className = "legend-close";
+  closeBtn.setAttribute("aria-label", "Close legend");
+  closeBtn.innerHTML = "&times;";
+  closeBtn.addEventListener("click", () => {
+    legend.classList.add("legend-closed");
+    if (reopenBtn) reopenBtn.classList.add("visible");
+  });
+  legend.appendChild(closeBtn);
+
+  if (reopenBtn) {
+    reopenBtn.addEventListener("click", () => {
+      legend.classList.remove("legend-closed");
+      reopenBtn.classList.remove("visible");
+    });
+  }
 
   Object.entries(legendConfig).forEach(([layerKey, section]) => {
     const box = document.createElement("div");
@@ -289,8 +478,16 @@ function renderLegendShell(legendConfig) {
 
 function updateLegend(activeLayers) {
   const legend = document.getElementById("legend");
+  const reopenBtn = document.getElementById("legend-reopen");
   const anyActive = Object.values(activeLayers).some(Boolean);
+
   legend.classList.toggle("legend-hidden", !anyActive);
+
+  if (reopenBtn) {
+    const showReopen = anyActive && legend.classList.contains("legend-closed");
+    reopenBtn.classList.toggle("visible", showReopen);
+    if (!anyActive) legend.classList.remove("legend-closed");
+  }
 
   document.querySelectorAll(".legend-section").forEach((section) => {
     const key = section.dataset.layer;
@@ -298,8 +495,130 @@ function updateLegend(activeLayers) {
   });
 }
 
+// --- Media sidecar ----------------------------------------------------
+// Docks a media carousel to the left/right half of the viewport, the same
+// way the map docks (see placeMapForChapter()) - a chapter picks ONE of the
+// two side panels via "mapPosition" or "mediaPosition", never both.
+function placeMediaForChapter(chapter) {
+  const sidecar = document.getElementById("media-sidecar");
+  if (!sidecar) return;
+
+  const position =
+    chapter.mediaPosition === "left" || chapter.mediaPosition === "right"
+      ? chapter.mediaPosition
+      : "none";
+
+  document.body.classList.remove("media-pos-left", "media-pos-right", "media-pos-none");
+  document.body.classList.add(`media-pos-${position}`);
+
+  sidecar.innerHTML = "";
+  if (position !== "none") {
+    sidecar.appendChild(renderMediaCarousel(normalizeMedia(chapter)));
+  }
+}
+
+// --- Map framing (camera) ------------------------------------------------
+// Computes the bounding box of every coordinate in a GeoJSON
+// FeatureCollection. Used to fly/fit the map to a layer's true extent -
+// the same idea as Esri's view.goTo(layer.fullExtent) - instead of a
+// hand-tuned center+zoom, which only ever looks right at one window size
+// and tends to crop or drift once you eyeball a "close enough" zoom level.
+function computeBBox(geojson) {
+  let minLng = Infinity;
+  let minLat = Infinity;
+  let maxLng = -Infinity;
+  let maxLat = -Infinity;
+
+  const walk = (coords) => {
+    if (typeof coords[0] === "number") {
+      const [lng, lat] = coords;
+      if (lng < minLng) minLng = lng;
+      if (lng > maxLng) maxLng = lng;
+      if (lat < minLat) minLat = lat;
+      if (lat > maxLat) maxLat = lat;
+    } else {
+      coords.forEach(walk);
+    }
+  };
+
+  geojson.features.forEach((f) => walk(f.geometry.coordinates));
+  return [
+    [minLng, minLat],
+    [maxLng, maxLat]
+  ];
+}
+
+// Fetched directly (independent of the map's own tile loading) so a
+// chapter's camera framing is available immediately, keyed by the same
+// names used for the MapLibre sources below ("marin", "homestead").
+async function loadLayerBounds() {
+  const [marin, homestead] = await Promise.all([
+    fetch("data/marin_county.geojson").then((r) => r.json()),
+    fetch("data/homestead.geojson").then((r) => r.json())
+  ]);
+  return {
+    marin: computeBBox(marin),
+    homestead: computeBBox(homestead)
+  };
+}
+
+// Moves the camera for a given chapter. A chapter can supply "fitToLayer"
+// (one of the names returned by loadLayerBounds()) to reliably frame that
+// layer's real extent regardless of viewport size/shape. Chapters that
+// aren't framing a specific boundary layer fall back to a hand-tuned
+// center/zoom/pitch/bearing ("location").
+function flyToChapter(map, chapter, layerBounds) {
+  const bounds = chapter.fitToLayer && layerBounds[chapter.fitToLayer];
+  if (bounds) {
+    map.fitBounds(bounds, {
+      padding: chapter.fitPadding || 60,
+      pitch: chapter.location.pitch || 0,
+      bearing: chapter.location.bearing || 0,
+      duration: 1200
+    });
+  } else {
+    map.flyTo({ ...chapter.location, duration: 1200 });
+  }
+}
+
+// --- Map controls -------------------------------------------------------
+// Custom-styled overlay controls (fullscreen top-right; home/zoom stacked
+// bottom-right) in place of MapLibre's default NavigationControl, so we can
+// match the client's reference design instead of the library's stock look.
+function initMapControls(map, chapters, layerBounds) {
+  const mapEl = document.getElementById("map");
+  const fullscreenBtn = document.getElementById("map-fullscreen-btn");
+  const homeBtn = document.getElementById("map-home-btn");
+  const zoomInBtn = document.getElementById("map-zoom-in-btn");
+  const zoomOutBtn = document.getElementById("map-zoom-out-btn");
+
+  if (zoomInBtn) zoomInBtn.addEventListener("click", () => map.zoomIn());
+  if (zoomOutBtn) zoomOutBtn.addEventListener("click", () => map.zoomOut());
+
+  if (homeBtn) {
+    homeBtn.addEventListener("click", () => {
+      const chapter =
+        chapters.find((c) => c.id === currentChapterId) || chapters[0];
+      flyToChapter(map, chapter, layerBounds);
+    });
+  }
+
+  if (fullscreenBtn && mapEl) {
+    fullscreenBtn.addEventListener("click", () => {
+      if (document.fullscreenElement) {
+        document.exitFullscreen();
+      } else {
+        mapEl.requestFullscreen().catch(() => {});
+      }
+    });
+    document.addEventListener("fullscreenchange", () => {
+      window.setTimeout(() => map.resize(), 100);
+    });
+  }
+}
+
 // --- Map --------------------------------------------------------------
-function initMap(chapters) {
+function initMap(chapters, layerBounds) {
   const map = new maplibregl.Map({
     container: "map",
     // Free, no-API-key vector basemap (CARTO Positron). Swap for any other
@@ -316,7 +635,7 @@ function initMap(chapters) {
     scrollZoom: false
   });
 
-  map.addControl(new maplibregl.NavigationControl(), "top-right");
+  initMapControls(map, chapters, layerBounds);
 
   map.on("load", () => {
     map.addSource("risk-zone", {
@@ -367,29 +686,56 @@ function initMap(chapters) {
       }
     });
 
-    // CSA 14 (Homestead Valley) boundary. This is a DUMMY placeholder shape
-    // for now (data/dummy-csa14-boundary.geojson) - swap the "data" path
-    // below for the real converted-shapefile GeoJSON once it's ready; no
-    // other code needs to change since the source/layer wiring stays the
-    // same either way.
-    map.addSource("csa14", {
+    // Marin County boundary (macro scale) - real County GIS data, converted
+    // from shapefile (EPSG:2872) to WGS84. Outline only, no fill - it's just
+    // context for where Homestead Valley sits within the county.
+    map.addSource("marin-county", {
       type: "geojson",
-      data: "data/dummy-csa14-boundary.geojson"
+      data: "data/marin_county.geojson"
     });
     map.addLayer({
-      id: "csa14-fill",
-      type: "fill",
-      source: "csa14",
-      layout: { visibility: "none" },
-      paint: {
-        "fill-color": "#1c1c1c",
-        "fill-opacity": 0.08
-      }
-    });
-    map.addLayer({
-      id: "csa14-line",
+      id: "marin-line",
       type: "line",
-      source: "csa14",
+      source: "marin-county",
+      layout: { visibility: "none" },
+      paint: { "line-color": "#4a4a4a", "line-width": 1.5 }
+    });
+
+    // Homestead Valley / CSA 14 boundary (micro scale) - real Marin County
+    // GIS data (469-acre service area), reprojected to WGS84. Two paint
+    // treatments share the same source/geometry: a bold red "highlight" used
+    // when this shape is a small polygon picked out on the county-wide map,
+    // and a subtler dashed "boundary" treatment used once the map is zoomed
+    // all the way in to Homestead Valley itself.
+    map.addSource("homestead", {
+      type: "geojson",
+      data: "data/homestead.geojson"
+    });
+    map.addLayer({
+      id: "homestead-highlight-fill",
+      type: "fill",
+      source: "homestead",
+      layout: { visibility: "none" },
+      paint: { "fill-color": "#c0392b", "fill-opacity": 0.55 }
+    });
+    map.addLayer({
+      id: "homestead-highlight-line",
+      type: "line",
+      source: "homestead",
+      layout: { visibility: "none" },
+      paint: { "line-color": "#c0392b", "line-width": 2.5 }
+    });
+    map.addLayer({
+      id: "homestead-boundary-fill",
+      type: "fill",
+      source: "homestead",
+      layout: { visibility: "none" },
+      paint: { "fill-color": "#1c1c1c", "fill-opacity": 0.08 }
+    });
+    map.addLayer({
+      id: "homestead-boundary-line",
+      type: "line",
+      source: "homestead",
       layout: { visibility: "none" },
       paint: {
         "line-color": "#1c1c1c",
@@ -398,29 +744,47 @@ function initMap(chapters) {
       }
     });
 
-    setupScrollTriggers(map, chapters);
+    setupScrollTriggers(map, chapters, layerBounds);
   });
 
   return map;
 }
 
+// Matches the CSS transition duration on #map's left/width (see style.css)
+// - used to know when it's safe to re-measure the container after a dock
+// change, see placeMapForChapter()/setupScrollTriggers() below.
+const MAP_DOCK_TRANSITION_MS = 500;
+
+// Tracks whichever side the map was docked to for the previously-active
+// chapter, so we only wait out the CSS width transition when the dock
+// position is actually changing (not on every scroll).
+let lastMapDockPosition = null;
+
 // Docks the single shared full-screen map to the left half, right half, or
 // hides it entirely, based on the currently active chapter's "mapPosition".
 // This is pure CSS (see body.map-pos-* rules in style.css) - the map never
 // moves in the DOM, so no reparenting/resize-glitch handling is needed.
+// Returns true if the dock position actually changed (and so the container
+// is about to animate to a new width).
 function placeMapForChapter(map, chapter) {
   const position = chapter.mapPosition || "none";
+  const changed = lastMapDockPosition !== position;
+  lastMapDockPosition = position;
+
   document.body.classList.remove("map-pos-left", "map-pos-right", "map-pos-none");
   document.body.classList.add(`map-pos-${position}`);
 
-  // The map's on-screen width just changed (or is changing via CSS
-  // transition) - nudge MapLibre to recompute its canvas size, both
-  // immediately and once the transition settles.
+  // Nudge MapLibre to recompute its canvas size for whatever the container's
+  // size is right now (immediately useful when the dock side didn't change).
   map.resize();
-  window.setTimeout(() => map.resize(), 450);
+  return changed;
 }
 
-function setupScrollTriggers(map, chapters) {
+function setupScrollTriggers(map, chapters, layerBounds) {
+  // Bumped on every chapter change so a delayed fitBounds() from a chapter
+  // the reader has already scrolled past never lands after a newer one.
+  let flyToken = 0;
+
   const observer = new IntersectionObserver(
     (entries) => {
       entries.forEach((entry) => {
@@ -428,19 +792,42 @@ function setupScrollTriggers(map, chapters) {
         const chapter = chapters.find((c) => c.id === entry.target.id);
         if (!chapter) return;
 
-        placeMapForChapter(map, chapter);
-        map.flyTo({ ...chapter.location, duration: 1200 });
+        currentChapterId = chapter.id;
+        const token = ++flyToken;
+
+        const dockChanging = placeMapForChapter(map, chapter);
+        placeMediaForChapter(chapter);
+
+        if (dockChanging) {
+          // The map's on-screen width is mid-transition (CSS), so fitBounds()
+          // would frame against the wrong (pre-transition) canvas size if run
+          // now. Wait for the transition to finish, resize the canvas to its
+          // real final size, then frame the camera.
+          window.setTimeout(() => {
+            if (token !== flyToken) return;
+            map.resize();
+            flyToChapter(map, chapter, layerBounds);
+          }, MAP_DOCK_TRANSITION_MS);
+        } else {
+          flyToChapter(map, chapter, layerBounds);
+        }
 
         const riskVisibility = chapter.layers.risk ? "visible" : "none";
         const pointsVisibility = chapter.layers.points ? "visible" : "none";
-        const csa14Visibility = chapter.layers.csa14 ? "visible" : "none";
+        const marinVisibility = chapter.layers.marin ? "visible" : "none";
+        const homesteadHighlightVisibility = chapter.layers.homesteadHighlight ? "visible" : "none";
+        const homesteadBoundaryVisibility = chapter.layers.homesteadBoundary ? "visible" : "none";
         map.setLayoutProperty("risk-zone-fill", "visibility", riskVisibility);
         map.setLayoutProperty("risk-zone-outline", "visibility", riskVisibility);
         map.setLayoutProperty("points-circle", "visibility", pointsVisibility);
-        map.setLayoutProperty("csa14-fill", "visibility", csa14Visibility);
-        map.setLayoutProperty("csa14-line", "visibility", csa14Visibility);
+        map.setLayoutProperty("marin-line", "visibility", marinVisibility);
+        map.setLayoutProperty("homestead-highlight-fill", "visibility", homesteadHighlightVisibility);
+        map.setLayoutProperty("homestead-highlight-line", "visibility", homesteadHighlightVisibility);
+        map.setLayoutProperty("homestead-boundary-fill", "visibility", homesteadBoundaryVisibility);
+        map.setLayoutProperty("homestead-boundary-line", "visibility", homesteadBoundaryVisibility);
 
         updateLegend(chapter.layers);
+        updateToolbar(chapter.id);
       });
     },
     { threshold: 0.5 }
@@ -451,16 +838,31 @@ function setupScrollTriggers(map, chapters) {
 
 // --- Bootstrap --------------------------------------------------------
 async function bootstrap() {
-  const response = await fetch("data/chapters.json");
-  const config = await response.json();
+  const [config, layerBounds] = await Promise.all([
+    fetch("data/chapters.json").then((r) => r.json()),
+    loadLayerBounds()
+  ]);
 
   applySettings(config.settings);
   applyTheme(config.theme);
 
   renderChapters(config.chapters);
+
+  // Toolbar lives right after the hero section (not as a permanently fixed
+  // header) so it scrolls normally under the intro and only sticks once the
+  // reader scrolls past it - see "position: sticky" on #toolbar in CSS.
+  const toolbar = renderToolbar(config.chapters);
+  const heroSection = document.querySelector(".chapter.hero");
+  const story = document.getElementById("story");
+  if (heroSection) {
+    heroSection.insertAdjacentElement("afterend", toolbar);
+  } else {
+    story.prepend(toolbar);
+  }
+
   renderLegendShell(config.legend);
   renderFooter(config.footer);
-  initMap(config.chapters);
+  initMap(config.chapters, layerBounds);
   setupVideoPauseOnScrollOut();
 }
 

@@ -196,8 +196,7 @@ None of these are blockers for this prototype's current size — they matter onc
 
 ## Next steps (per the main project plan)
 
-1. Swap in the real CSA 14 boundary (`data/csa14-boundary.geojson`, already converted from the County shapefile) per the instructions above, once it's finalized.
-2. Replace remaining dummy chapter text in `data/chapters.json` with real narrative copy from the brief.
-3. Replace remaining dummy images/video with final production assets.
-4. Add the rest of the sections from the full content plan (8 sections + opening).
-5. Deploy to GitHub Pages / Cloudflare Pages / Netlify (all free) once content is finalized.
+1. Replace remaining dummy chapter text in `data/chapters.json` with real narrative copy from the brief.
+2. Replace remaining dummy images/video with final production assets.
+3. Add the rest of the sections from the full content plan (8 sections + opening).
+4. Deploy to GitHub Pages / Cloudflare Pages / Netlify (all free) once content is finalized.

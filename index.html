@@ -21,8 +21,29 @@
     <h1>Homestead Valley Wildfire StoryMap</h1>
   </div>
 
-  <div id="map"></div>
+  <div id="map">
+    <div class="map-controls">
+      <button type="button" id="map-fullscreen-btn" class="map-control-btn map-control-fullscreen" aria-label="Toggle fullscreen map" title="Toggle fullscreen">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M16 3h3a2 2 0 0 1 2 2v3"/><path d="M8 21H5a2 2 0 0 1-2-2v-3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
+      </button>
+      <div class="map-control-stack">
+        <button type="button" id="map-home-btn" class="map-control-btn" aria-label="Reset map view" title="Reset view">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V9.5"/></svg>
+        </button>
+        <div class="map-control-zoom-group">
+          <button type="button" id="map-zoom-in-btn" class="map-control-btn" aria-label="Zoom in" title="Zoom in">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+          </button>
+          <button type="button" id="map-zoom-out-btn" class="map-control-btn" aria-label="Zoom out" title="Zoom out">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div id="media-sidecar"></div>
   <div id="legend"></div>
+  <button type="button" id="legend-reopen" class="legend-reopen" aria-label="Show legend">Legend</button>
   <div id="story"></div>
   <footer id="footer"></footer>
 
