@@ -335,41 +335,133 @@ function renderChapters(chapters) {
 }
 
 // --- Toolbar (chapter navigation) ------------------------------------------
-// A nav bar listing every chapter (its short "navLabel"), clickable to jump
-// straight to that section, with the current chapter highlighted as the
-// reader scrolls - same idea as ArcGIS StoryMaps' section nav / table of
-// contents. It's inserted directly after the hero section (see bootstrap())
-// and uses "position: sticky" in CSS, so it scrolls normally underneath the
-// hero and only locks to the top once the reader scrolls past it.
+// Two-tier nav: a top row of section pills ("Get Oriented", "What Wildfire
+// Means Here", ...) plus, below it, one sub-row per section listing that
+// section's chapters - only the sub-row for the currently-active (or
+// last-clicked) section is visible at a time. This keeps the bar usable
+// once a story has dozens of chapters, instead of one long flat scrolling
+// row of pills - same idea as ArcGIS StoryMaps' section nav / table of
+// contents, just collapsed a level. It's inserted directly after the hero
+// section (see bootstrap()) and uses "position: sticky" in CSS, so it
+// scrolls normally underneath the hero and only locks to the top once the
+// reader scrolls past it.
+//
+// Section grouping is derived from each chapter's id prefix rather than a
+// hardcoded per-chapter list, so new "section1-*"/"section2-*" chapters
+// automatically land in the right group.
+const SECTION_LABELS = {
+  orient: "Get Oriented",
+  section1: "What Wildfire Means Here",
+  section2: "How Homes Ignite",
+  closing: "Take Action"
+};
+
+function sectionIdFor(chapter) {
+  if (chapter.id.startsWith("section1")) return "section1";
+  if (chapter.id.startsWith("section2")) return "section2";
+  if (chapter.id === "see-it-in-motion" || chapter.id === "take-action") return "closing";
+  return "orient";
+}
+
+// Preserves first-appearance order (chapters.json order), grouping chapters
+// under whichever section id they belong to.
+function groupChaptersBySection(chapters) {
+  const order = [];
+  const groups = {};
+  chapters.forEach((chapter) => {
+    const sectionId = sectionIdFor(chapter);
+    if (!groups[sectionId]) {
+      groups[sectionId] = [];
+      order.push(sectionId);
+    }
+    groups[sectionId].push(chapter);
+  });
+  return { order, groups };
+}
+
+function scrollToChapter(id) {
+  const target = document.getElementById(id);
+  if (target) target.scrollIntoView({ behavior: "smooth" });
+}
+
+// Shows the sub-row for one section (hides all others) and marks its
+// section pill active - used both on section-pill click and, via
+// updateToolbar(), as the reader scrolls between sections.
+function showToolbarSection(sectionId, toolbarEl) {
+  const bar = toolbarEl || document.getElementById("toolbar");
+  if (!bar) return;
+  bar.querySelectorAll(".toolbar-section-item").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.section === sectionId);
+  });
+  bar.querySelectorAll(".toolbar-subrow").forEach((row) => {
+    row.classList.toggle("active", row.dataset.section === sectionId);
+  });
+}
+
 function renderToolbar(chapters) {
   const toolbar = document.createElement("nav");
   toolbar.id = "toolbar";
   toolbar.setAttribute("aria-label", "Story chapters");
 
-  toolbar.innerHTML = chapters
+  const { order, groups } = groupChaptersBySection(chapters);
+
+  const sectionsRow = document.createElement("div");
+  sectionsRow.className = "toolbar-sections";
+  sectionsRow.innerHTML = order
     .map(
-      (chapter) => `
-        <button type="button" class="toolbar-item" data-target="${chapter.id}">
-          ${chapter.navLabel || chapter.title}
+      (sectionId) => `
+        <button type="button" class="toolbar-section-item" data-section="${sectionId}">
+          ${SECTION_LABELS[sectionId] || sectionId}
         </button>
       `
     )
     .join("");
+  toolbar.appendChild(sectionsRow);
+
+  order.forEach((sectionId) => {
+    const subrow = document.createElement("div");
+    subrow.className = "toolbar-subrow";
+    subrow.dataset.section = sectionId;
+    subrow.innerHTML = groups[sectionId]
+      .map(
+        (chapter) => `
+          <button type="button" class="toolbar-item" data-target="${chapter.id}">
+            ${chapter.navLabel || chapter.title}
+          </button>
+        `
+      )
+      .join("");
+    toolbar.appendChild(subrow);
+  });
 
   toolbar.querySelectorAll(".toolbar-item").forEach((btn) => {
+    btn.addEventListener("click", () => scrollToChapter(btn.dataset.target));
+  });
+
+  toolbar.querySelectorAll(".toolbar-section-item").forEach((btn) => {
     btn.addEventListener("click", () => {
-      const target = document.getElementById(btn.dataset.target);
-      if (target) target.scrollIntoView({ behavior: "smooth" });
+      const sectionId = btn.dataset.section;
+      showToolbarSection(sectionId, toolbar);
+      const firstChapter = groups[sectionId] && groups[sectionId][0];
+      if (firstChapter) scrollToChapter(firstChapter.id);
     });
   });
+
+  // Default to the first section's sub-row visible before any scrolling.
+  if (order.length) showToolbarSection(order[0], toolbar);
 
   return toolbar;
 }
 
-function updateToolbar(activeChapterId) {
+function updateToolbar(activeChapterId, chapters) {
   document.querySelectorAll(".toolbar-item").forEach((btn) => {
     btn.classList.toggle("active", btn.dataset.target === activeChapterId);
   });
+
+  const activeChapter = chapters.find((c) => c.id === activeChapterId);
+  if (activeChapter) {
+    showToolbarSection(sectionIdFor(activeChapter));
+  }
 }
 
 // --- Footer ------------------------------------------------------------
@@ -499,6 +591,14 @@ function updateLegend(activeLayers) {
 // Docks a media carousel to the left/right half of the viewport, the same
 // way the map docks (see placeMapForChapter()) - a chapter picks ONE of the
 // two side panels via "mapPosition" or "mediaPosition", never both.
+//
+// Tracks whichever side the panel was docked to for the previously-active
+// chapter (mirrors lastMapDockPosition below), so a content swap only gets
+// the extra crossfade treatment when the panel itself stays put - if it's
+// appearing/disappearing/switching sides, its own opacity transition (see
+// body.media-pos-* in CSS) already makes that change smooth.
+let lastMediaDockPosition = null;
+
 function placeMediaForChapter(chapter) {
   const sidecar = document.getElementById("media-sidecar");
   if (!sidecar) return;
@@ -511,9 +611,28 @@ function placeMediaForChapter(chapter) {
   document.body.classList.remove("media-pos-left", "media-pos-right", "media-pos-none");
   document.body.classList.add(`media-pos-${position}`);
 
-  sidecar.innerHTML = "";
-  if (position !== "none") {
-    sidecar.appendChild(renderMediaCarousel(normalizeMedia(chapter)));
+  const dockPositionChanged = lastMediaDockPosition !== position;
+  lastMediaDockPosition = position;
+
+  const swapContent = () => {
+    sidecar.innerHTML = "";
+    if (position !== "none") {
+      sidecar.appendChild(renderMediaCarousel(normalizeMedia(chapter)));
+    }
+  };
+
+  if (dockPositionChanged || position === "none") {
+    swapContent();
+  } else {
+    // Docked to the same side as before, just showing a different
+    // chapter's media (e.g. scrolling from one right-docked chapter
+    // straight into the next) - crossfade the swap instead of an
+    // abrupt cut from one image/video straight to another.
+    sidecar.classList.add("media-sidecar-swapping");
+    window.setTimeout(() => {
+      swapContent();
+      requestAnimationFrame(() => sidecar.classList.remove("media-sidecar-swapping"));
+    }, 220);
   }
 }
 
@@ -827,13 +946,91 @@ function setupScrollTriggers(map, chapters, layerBounds) {
         map.setLayoutProperty("homestead-boundary-line", "visibility", homesteadBoundaryVisibility);
 
         updateLegend(chapter.layers);
-        updateToolbar(chapter.id);
+        updateToolbar(chapter.id, chapters);
       });
     },
     { threshold: 0.5 }
   );
 
   document.querySelectorAll(".chapter").forEach((el) => observer.observe(el));
+
+  setupFooterRelease();
+}
+
+// --- Footer release -------------------------------------------------------
+// #map and #media-sidecar are position:fixed so they stay pinned to the
+// viewport while the reader scrolls through chapters - that's the whole
+// point of the docked-panel effect. But it means that once the reader
+// scrolls past the last chapter, the panel would stay glued to the
+// viewport and the footer would have to slide up *over* it to become
+// visible (a "curtain" effect), rather than the footer simply appearing
+// after it like normal content.
+//
+// Instead, right as the footer is about to enter the viewport, "release"
+// whichever panel is currently docked: switch it from fixed to absolute,
+// anchored at the exact document position that puts its bottom edge flush
+// against the footer's top edge. It keeps whatever it was showing (nothing
+// gets hidden/removed) but becomes a normal document-flow element that
+// scrolls away with the rest of the page instead of staying pinned - so
+// the footer just follows directly beneath it, like any two stacked
+// blocks. Scrolling back up above the footer re-pins it to fixed so the
+// normal chapter-driven docking resumes.
+function setupFooterRelease() {
+  const footer = document.getElementById("footer");
+  const panels = [document.getElementById("map"), document.getElementById("media-sidecar")].filter(Boolean);
+  if (!footer || !panels.length) return;
+
+  const observer = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          const footerTop = entry.boundingClientRect.top + window.scrollY;
+          panels.forEach((panel) => {
+            const height = panel.getBoundingClientRect().height;
+            panel.style.position = "absolute";
+            panel.style.top = `${footerTop - height}px`;
+          });
+        } else {
+          panels.forEach((panel) => {
+            panel.style.position = "";
+            panel.style.top = "";
+          });
+        }
+      });
+    },
+    { threshold: 0 }
+  );
+
+  observer.observe(footer);
+}
+
+// --- Nav offset ---------------------------------------------------------
+// #header (fixed) and #toolbar (sticky, locks under it) together occupy the
+// top of the viewport once the reader scrolls past the hero. Everything
+// else that's fixed to the viewport - the docked #map/#media-sidecar panels
+// - needs to start below that combined height, and chapter sections need
+// enough top clearance that their content doesn't scroll to a stop
+// underneath it. Both are driven off one CSS custom property, kept in sync
+// here so it never has to be hand-tuned to match the nav's actual rendered
+// height (which varies with the two-tier toolbar's content).
+function setupNavOffset(headerEl, toolbarEl) {
+  if (!headerEl || !toolbarEl) return;
+
+  const update = () => {
+    const offset = headerEl.offsetHeight + toolbarEl.offsetHeight;
+    document.documentElement.style.setProperty("--nav-offset", `${offset}px`);
+    toolbarEl.style.top = `${headerEl.offsetHeight}px`;
+  };
+
+  update();
+
+  if (window.ResizeObserver) {
+    const resizeObserver = new ResizeObserver(update);
+    resizeObserver.observe(headerEl);
+    resizeObserver.observe(toolbarEl);
+  } else {
+    window.addEventListener("resize", update);
+  }
 }
 
 // --- Bootstrap --------------------------------------------------------
@@ -859,6 +1056,8 @@ async function bootstrap() {
   } else {
     story.prepend(toolbar);
   }
+
+  setupNavOffset(document.getElementById("header"), toolbar);
 
   renderLegendShell(config.legend);
   renderFooter(config.footer);

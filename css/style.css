@@ -12,6 +12,13 @@
   --color-light: #fdf6f0;
   --font-heading: "Poppins", "Segoe UI", sans-serif;
   --font-body: "Noto Serif", Georgia, serif;
+  /* Combined rendered height of #header + #toolbar, kept in sync at runtime
+     by setupNavOffset() in js/story.js. Everything fixed to the viewport
+     top (docked #map/#media-sidecar) and every chapter's scroll-stop point
+     reads off this instead of a hand-tuned guess, so it stays correct even
+     though the toolbar's height now varies (two-tier nav, wrapping labels
+     at narrow widths, etc). Falls back to a sane default before JS runs. */
+  --nav-offset: 5.5rem;
 }
 
 html, body {
@@ -35,8 +42,8 @@ h1, h2, h3, h4 {
 --------------------------------------------------------------------- */
 #map {
   position: fixed;
-  top: 0;
-  height: 100vh;
+  top: var(--nav-offset, 0px);
+  height: calc(100vh - var(--nav-offset, 0px));
   z-index: 0;
   background: #dfe8dc;
   opacity: 0;
@@ -150,10 +157,10 @@ body.map-pos-none #map {
 --------------------------------------------------------------------- */
 #media-sidecar {
   position: fixed;
-  top: 0;
-  height: 100vh;
+  top: var(--nav-offset, 0px);
+  height: calc(100vh - var(--nav-offset, 0px));
   z-index: 0;
-  background: var(--color-dark);
+  background: var(--color-light);
   opacity: 0;
   pointer-events: none;
   left: 0;
@@ -178,6 +185,18 @@ body.media-pos-right #media-sidecar {
 body.media-pos-none #media-sidecar {
   opacity: 0;
   pointer-events: none;
+}
+
+/* Momentary crossfade while placeMediaForChapter() swaps the sidecar's
+   inner content (a new chapter's image/video) without changing which side
+   it's docked to - toggled briefly around the innerHTML swap in JS. Needs
+   !important since it's overriding the docked-state opacity rules above,
+   which share the same specificity plus a body class. Deliberately a
+   shorter transition than the 0.5s dock fade above, so content swaps feel
+   snappier than the panel itself appearing/disappearing. */
+#media-sidecar.media-sidecar-swapping {
+  transition: opacity 0.25s ease !important;
+  opacity: 0 !important;
 }
 
 #media-sidecar .media-carousel {
@@ -212,9 +231,17 @@ body.media-pos-none #media-sidecar {
 .chapter {
   min-height: 100vh;
   display: flex;
-  align-items: center;
-  padding: 6vh 6vw;
+  /* Top-aligned (not vertically centered) so a chapter's card/media always
+     lands in the same predictable spot - right below the nav bar, with a
+     comfortable reading gap - whether the reader scrolls into it naturally
+     or jumps straight to it from a toolbar pill. */
+  align-items: flex-start;
+  padding: calc(var(--nav-offset, 0px) + 2.5rem) 6vw 6vh;
   box-sizing: border-box;
+  /* Anchor point used when the toolbar/section pills jump the reader
+     straight to a chapter (scrollIntoView) - without this the chapter's
+     top few rows would land underneath the fixed header + sticky toolbar. */
+  scroll-margin-top: var(--nav-offset, 0px);
 }
 
 /* Sidecar placement: text card sits opposite whichever side the map is
@@ -448,6 +475,7 @@ body.media-pos-none #media-sidecar {
 .chapter.hero {
   position: relative;
   min-height: 100vh;
+  align-items: center;
   justify-content: center;
   padding: 0;
   overflow: hidden;
@@ -533,7 +561,10 @@ body.media-pos-none #media-sidecar {
   z-index: 3;
   text-align: center;
   padding: 0.85rem 1rem;
-  background: linear-gradient(to bottom, rgba(0,0,0,0.45), rgba(0,0,0,0));
+  /* Solid theme-red brand bar - no transparency, so it (and the sticky
+     toolbar docked under it) reads as a permanent, opaque piece of chrome
+     rather than a translucent overlay that lets page content show through. */
+  background: var(--color-primary);
   color: #fff;
   pointer-events: none;
   font-family: var(--font-heading);
@@ -547,11 +578,18 @@ body.media-pos-none #media-sidecar {
 }
 
 /* ---------------------------------------------------------------------
-   Toolbar - persistent chapter nav. Sits just below the brand header,
-   listing every chapter's short "navLabel" as a clickable pill; clicking
-   one scrolls straight to that section (see renderToolbar()/updateToolbar()
-   in js/story.js). The active chapter's pill is highlighted as the reader
-   scrolls, driven by the same IntersectionObserver that drives the map.
+   Toolbar - persistent, two-tier chapter nav. Sits just below the brand
+   header. Top row ("toolbar-sections") is one pill per story section
+   (Get Oriented / What Wildfire Means Here / ...); clicking one swaps in
+   that section's sub-row and jumps to its first chapter. Below it, one
+   "toolbar-subrow" per section lists that section's chapters as pills -
+   only the active section's sub-row is displayed, so the bar stays usable
+   with 20+ chapters instead of one long flat scrolling row of pills (see
+   renderToolbar()/updateToolbar()/showToolbarSection() in js/story.js).
+   The active chapter's pill (and its parent section pill) are highlighted
+   as the reader scrolls, driven by the same IntersectionObserver that
+   drives the map. #toolbar's own "top" is set inline from JS
+   (setupNavOffset()) to sit flush under the actual rendered header height.
 --------------------------------------------------------------------- */
 #toolbar {
   position: sticky;
@@ -560,31 +598,79 @@ body.media-pos-none #media-sidecar {
   width: 100%;
   z-index: 4;
   display: flex;
-  justify-content: center;
-  gap: 0.4rem;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
   padding: 0.5rem 1rem;
-  background: rgba(28, 28, 28, 0.55);
-  backdrop-filter: blur(6px);
-  overflow-x: auto;
-  scrollbar-width: none;
+  background: var(--color-dark);
   pointer-events: auto;
 }
 
-#toolbar::-webkit-scrollbar {
+.toolbar-sections,
+.toolbar-subrow {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.toolbar-sections::-webkit-scrollbar,
+.toolbar-subrow::-webkit-scrollbar {
   display: none;
+}
+
+.toolbar-subrow {
+  display: none;
+  padding-top: 0.35rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.toolbar-subrow.active {
+  display: flex;
+}
+
+.toolbar-section-item {
+  flex: none;
+  font-family: var(--font-heading);
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: rgba(255, 255, 255, 0.85);
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 999px;
+  padding: 0.4rem 1rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.toolbar-section-item:hover {
+  border-color: rgba(255, 255, 255, 0.8);
+  color: #fff;
+}
+
+.toolbar-section-item.active {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: #fff;
 }
 
 .toolbar-item {
   flex: none;
   font-family: var(--font-heading);
-  font-size: 0.78rem;
+  font-size: 0.76rem;
   font-weight: 500;
   letter-spacing: 0.01em;
   color: rgba(255, 255, 255, 0.85);
   background: transparent;
   border: 1px solid rgba(255, 255, 255, 0.3);
   border-radius: 999px;
-  padding: 0.4rem 0.9rem;
+  padding: 0.35rem 0.85rem;
   cursor: pointer;
   white-space: nowrap;
   transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
