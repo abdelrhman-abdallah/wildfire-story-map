@@ -467,6 +467,123 @@ body.media-pos-none #media-sidecar {
   background: #fff;
 }
 
+/* Per-image expand/fullscreen button - same visual language as
+   .map-control-btn (white rounded-square, dark icon) so it reads as the
+   same "expand" affordance as the map's own fullscreen control, just
+   recolored to sit on top of a photo instead of the basemap. */
+.media-expand-btn {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  width: 2rem;
+  height: 2rem;
+  padding: 0.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  cursor: pointer;
+  z-index: 1;
+  transition: background 0.2s ease;
+}
+
+.media-expand-btn svg {
+  width: 100%;
+  height: 100%;
+}
+
+.media-expand-btn:hover {
+  background: var(--color-primary);
+}
+
+/* ---------------------------------------------------------------------
+   Image fullscreen modal - a single reusable lightbox (see
+   ensureImageModal()/openImageModal() in js/story.js) triggered by any
+   .media-expand-btn. Unlike the sidecar's cropped object-fit:cover
+   treatment, the image here is object-fit:contain so its real aspect
+   ratio is always preserved, however tall/wide the source photo is.
+--------------------------------------------------------------------- */
+.image-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10, 10, 10, 0.92);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease;
+  padding: 3rem 1.5rem;
+}
+
+.image-modal.open {
+  opacity: 1;
+  visibility: visible;
+}
+
+body.image-modal-open {
+  overflow: hidden;
+}
+
+.image-modal-figure {
+  margin: 0;
+  max-width: 100%;
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.image-modal-img {
+  display: block;
+  max-width: 100%;
+  max-height: calc(100vh - 8rem);
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: 4px;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5);
+}
+
+.image-modal-caption {
+  margin-top: 0.75rem;
+  color: #f2f2f2;
+  font-size: 0.9rem;
+  text-align: center;
+  max-width: 60ch;
+}
+
+.image-modal-close {
+  position: absolute;
+  top: 1.25rem;
+  right: 1.25rem;
+  width: 2.5rem;
+  height: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.image-modal-close svg {
+  width: 100%;
+  height: 100%;
+}
+
+.image-modal-close:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
 /* ---------------------------------------------------------------------
    Hero / title screen - full-bleed cover chapter, styled after the
    ArcGIS StoryMaps cover convention (full-bleed image, dark gradient
@@ -698,8 +815,15 @@ body.media-pos-none #media-sidecar {
   background: rgba(255, 255, 255, 0.95);
   border-radius: 8px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
-  padding: 0.5rem 2rem 0.5rem 0.9rem;
-  max-width: 220px;
+  padding: 0.6rem 2.2rem 0.6rem 1rem;
+  /* Sections lay out left-to-right (see .legend-section) so the legend
+     grows wider and stays short, instead of stacking into a tall column. */
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0.35rem 1.1rem;
+  max-width: min(94vw, 860px);
   font-size: 0.8rem;
   transition: opacity 0.2s ease, transform 0.2s ease;
 }
@@ -754,24 +878,87 @@ body.media-pos-none #media-sidecar {
   right: 1.5rem;
 }
 
+/* Every section is always visible and clickable (role="switch") so a reader
+   can flip any layer on/off, not just the ones the current chapter turned
+   on - opacity is the only thing distinguishing active vs. inactive now
+   (previously inactive sections collapsed to max-height:0, which hid them
+   entirely and would've made them impossible to switch back on). */
 .legend-section {
-  opacity: 0.35;
-  max-height: 0;
-  overflow: hidden;
-  transition: opacity 0.3s ease, max-height 0.3s ease, margin 0.3s ease;
+  opacity: 0.45;
+  flex: 0 0 auto;
+  min-width: 150px;
   margin: 0;
+  padding: 0.15rem 0.9rem 0.15rem 0.3rem;
+  border-right: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 5px;
+  cursor: pointer;
+  transition: opacity 0.2s ease, background 0.15s ease;
+}
+
+.legend-section:last-child {
+  border-right: none;
+  padding-right: 0.3rem;
+}
+
+.legend-section:hover {
+  opacity: 0.75;
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.legend-section:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
 }
 
 .legend-section.active {
   opacity: 1;
-  max-height: 200px;
-  margin: 0.5rem 0;
+}
+
+.legend-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin: 0 0 0.35rem;
 }
 
 .legend-section h4 {
-  margin: 0 0 0.35rem;
+  margin: 0;
   font-size: 0.8rem;
   font-family: var(--font-heading);
+}
+
+/* Small pill switch, purely decorative (the whole .legend-section div is
+   the actual click/keyboard target) - mirrors state via .active on the
+   parent so it never needs its own listener. */
+.legend-toggle {
+  position: relative;
+  flex: none;
+  width: 26px;
+  height: 15px;
+  border-radius: 999px;
+  background: #ccc;
+  transition: background 0.2s ease;
+}
+
+.legend-toggle-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  transition: transform 0.2s ease;
+}
+
+.legend-section.active .legend-toggle {
+  background: var(--color-primary);
+}
+
+.legend-section.active .legend-toggle-thumb {
+  transform: translateX(11px);
 }
 
 .legend-item {

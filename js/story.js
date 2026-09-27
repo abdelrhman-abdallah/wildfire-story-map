@@ -17,6 +17,60 @@ function applySettings(userSettings) {
 // the map's "home" control to know what view to reset back to.
 let currentChapterId = null;
 
+// Shared reference to the single MapLibre instance + a readiness flag (true
+// once its layers actually exist, after the "load" event's addLayer calls
+// finish) - both the automatic per-chapter layer visibility in
+// setupScrollTriggers() and the manual legend toggle clicks in
+// renderLegendShell() drive the SAME map through setMapLayerVisibility()
+// below, so a user's manual on/off click and the story's own scroll-driven
+// state never fight each other via two different code paths.
+let mapInstance = null;
+let mapLayersReady = false;
+
+// Maps each legend/chapters.json layer key to the real MapLibre layer id(s)
+// it controls (homesteadHighlight is backed by a fill + line pair sharing
+// one on/off state; the old sample "risk"/"points" dummy layers and the
+// duplicate black-dashed "homesteadBoundary" treatment have been removed -
+// see data/chapters.json legend config for the current real layers).
+const LEGEND_LAYER_IDS = {
+  marin: ["marin-line"],
+  homesteadHighlight: ["homestead-highlight-fill", "homestead-highlight-line"],
+  vegetation: ["vegetation-fill"],
+  elevation: ["elevation-fill"]
+};
+
+function setMapLayerVisibility(layerKey, visible) {
+  if (!mapInstance || !mapLayersReady) return;
+  const ids = LEGEND_LAYER_IDS[layerKey] || [];
+  ids.forEach((id) => mapInstance.setLayoutProperty(id, "visibility", visible ? "visible" : "none"));
+}
+
+// Homestead/CSA14 boundary paint states, keyed by whether the current
+// chapter also shows the Marin County outline (chapter.layers.marin).
+// Only "homestead-in-marin" is true - every other chapter showing the
+// boundary uses the subtle black/transparent treatment instead.
+const HOMESTEAD_BOUNDARY_STYLES = {
+  marin: { fillColor: "#c0392b", fillOpacity: 0.55, lineColor: "#c0392b", lineWidth: 2.5 },
+  default: { fillColor: "#000000", fillOpacity: 0.08, lineColor: "#000000", lineWidth: 2 }
+};
+
+function updateHomesteadBoundaryStyle(map, chapter) {
+  if (!map || !mapLayersReady) return;
+  const style = chapter && chapter.layers && chapter.layers.marin
+    ? HOMESTEAD_BOUNDARY_STYLES.marin
+    : HOMESTEAD_BOUNDARY_STYLES.default;
+  map.setPaintProperty("homestead-highlight-fill", "fill-color", style.fillColor);
+  map.setPaintProperty("homestead-highlight-fill", "fill-opacity", style.fillOpacity);
+  map.setPaintProperty("homestead-highlight-line", "line-color", style.lineColor);
+  map.setPaintProperty("homestead-highlight-line", "line-width", style.lineWidth);
+
+  // Keep the legend swatch honest - it should show whichever boundary
+  // color/line-width is actually live on the map right now, not a fixed
+  // color baked into chapters.json.
+  const swatch = document.querySelector('.legend-section[data-layer="homesteadHighlight"] .legend-swatch');
+  if (swatch) swatch.style.background = style.lineColor;
+}
+
 // --- Theme (colors + fonts) -----------------------------------------------
 // Applied as CSS custom properties so css/style.css can reference
 // var(--color-primary), var(--font-heading), etc. Falls back to whatever
@@ -179,6 +233,83 @@ function renderMediaItemInner(item) {
 // both inline (inside a chapter-content card) and in the full-bleed sidecar
 // panel (see #media-sidecar / placeMediaForChapter()) - a chapter can send
 // its media either place via "mediaPosition": "inline" | "left" | "right".
+
+// --- Image fullscreen modal ------------------------------------------------
+// One overlay, lazily built on first use and reused for every image on the
+// page (inline carousels, the docked sidecar, wherever) - keeps this to a
+// single DOM node/listener set instead of one modal per slide. Sidecar
+// images are cropped with object-fit:cover to fill their panel; this modal
+// renders the same <img> with object-fit:contain instead, so the reader can
+// always see the whole photo at its real aspect ratio.
+let imageModal = null;
+
+function ensureImageModal() {
+  if (imageModal) return imageModal;
+
+  const modal = document.createElement("div");
+  modal.id = "image-modal";
+  modal.className = "image-modal";
+  modal.setAttribute("role", "dialog");
+  modal.setAttribute("aria-modal", "true");
+  modal.setAttribute("aria-label", "Expanded image");
+
+  const closeBtn = document.createElement("button");
+  closeBtn.type = "button";
+  closeBtn.className = "image-modal-close";
+  closeBtn.setAttribute("aria-label", "Close expanded image");
+  closeBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>`;
+
+  const figure = document.createElement("figure");
+  figure.className = "image-modal-figure";
+
+  const img = document.createElement("img");
+  img.className = "image-modal-img";
+
+  const caption = document.createElement("figcaption");
+  caption.className = "image-modal-caption";
+
+  figure.appendChild(img);
+  figure.appendChild(caption);
+  modal.appendChild(closeBtn);
+  modal.appendChild(figure);
+  document.body.appendChild(modal);
+
+  const close = () => {
+    modal.classList.remove("open");
+    document.body.classList.remove("image-modal-open");
+    // Drop the src once the close transition finishes so a lingering
+    // large image doesn't sit decoded in memory between opens.
+    window.setTimeout(() => {
+      if (!modal.classList.contains("open")) img.src = "";
+    }, 250);
+  };
+
+  // Click anywhere on the dark backdrop (i.e. not the image/caption/close
+  // button themselves) closes it, same convention as most lightboxes.
+  modal.addEventListener("click", (event) => {
+    if (event.target === modal || event.target === figure) close();
+  });
+  closeBtn.addEventListener("click", close);
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && modal.classList.contains("open")) close();
+  });
+
+  imageModal = { modal, img, caption, closeBtn, close };
+  return imageModal;
+}
+
+function openImageModal(src, alt, captionText) {
+  if (!src) return;
+  const { modal, img, caption, closeBtn } = ensureImageModal();
+  img.src = src;
+  img.alt = alt || "";
+  caption.textContent = captionText || "";
+  caption.style.display = captionText ? "" : "none";
+  modal.classList.add("open");
+  document.body.classList.add("image-modal-open");
+  closeBtn.focus();
+}
+
 function renderMediaCarousel(mediaItems) {
   const wrap = document.createElement("div");
   wrap.className = "media-carousel";
@@ -194,6 +325,25 @@ function renderMediaCarousel(mediaItems) {
       ${renderMediaItemInner(item)}
       ${item.caption ? `<figcaption>${item.caption}</figcaption>` : ""}
     `;
+
+    // Fullscreen/expand only makes sense for images - videos (local <video
+    // controls> or the YouTube iframe) already have their own native
+    // fullscreen affordance. Reuses the same four-corner-bracket icon as
+    // #map-fullscreen-btn so it reads as the same "expand" action.
+    if (item.type !== "video") {
+      const expandBtn = document.createElement("button");
+      expandBtn.type = "button";
+      expandBtn.className = "media-expand-btn";
+      expandBtn.setAttribute("aria-label", "View expanded image");
+      expandBtn.title = "Expand image";
+      expandBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M16 3h3a2 2 0 0 1 2 2v3"/><path d="M8 21H5a2 2 0 0 1-2-2v-3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>`;
+      expandBtn.addEventListener("click", (event) => {
+        event.stopPropagation();
+        openImageModal(item.src, item.alt, item.caption);
+      });
+      slide.appendChild(expandBtn);
+    }
+
     track.appendChild(slide);
   });
 
@@ -353,13 +503,25 @@ const SECTION_LABELS = {
   orient: "Get Oriented",
   section1: "What Wildfire Means Here",
   section2: "How Homes Ignite",
+  reduce: "Reduce Your Risk",
+  together: "Work Together",
+  history: "Our History",
   closing: "Take Action"
 };
 
 function sectionIdFor(chapter) {
   if (chapter.id.startsWith("section1")) return "section1";
   if (chapter.id.startsWith("section2")) return "section2";
-  if (chapter.id === "see-it-in-motion" || chapter.id === "take-action") return "closing";
+  // Sections 3 (two strategies) and 4 (defensible-space zones) are two
+  // narrative sections in the design brief, but both are "how do I reduce
+  // risk on my own property" content - grouped under one toolbar pill so
+  // the top row doesn't grow a pill per source-document section.
+  if (chapter.id.startsWith("section3") || chapter.id.startsWith("section4")) return "reduce";
+  // Sections 5 (prioritize) and 6 (neighborhood) are both about acting
+  // beyond a single fix-it list - together under one pill.
+  if (chapter.id.startsWith("section5") || chapter.id.startsWith("section6")) return "together";
+  if (chapter.id.startsWith("section7")) return "history";
+  if (chapter.id.startsWith("section8") || chapter.id === "see-it-in-motion" || chapter.id === "take-action") return "closing";
   return "orient";
 }
 
@@ -383,6 +545,17 @@ function scrollToChapter(id) {
   const target = document.getElementById(id);
   if (target) target.scrollIntoView({ behavior: "smooth" });
 }
+
+// Clicking a top-level toolbar section pill normally jumps to that
+// section's first chapter (see renderToolbar() below) - but for "Get
+// Oriented" that first chapter is the full-bleed hero/title screen, which
+// just re-scrolls to the very top of the page instead of anywhere useful.
+// This override sends it straight to the "where Homestead Valley sits"
+// chapter instead. Add more entries here if another section ever needs
+// its pill to land somewhere other than its first chapter.
+const SECTION_NAV_OVERRIDES = {
+  orient: "welcome"
+};
 
 // Shows the sub-row for one section (hides all others) and marks its
 // section pill active - used both on section-pill click and, via
@@ -443,7 +616,8 @@ function renderToolbar(chapters) {
       const sectionId = btn.dataset.section;
       showToolbarSection(sectionId, toolbar);
       const firstChapter = groups[sectionId] && groups[sectionId][0];
-      if (firstChapter) scrollToChapter(firstChapter.id);
+      const targetId = SECTION_NAV_OVERRIDES[sectionId] || (firstChapter && firstChapter.id);
+      if (targetId) scrollToChapter(targetId);
     });
   });
 
@@ -528,6 +702,12 @@ function renderLegendShell(legendConfig) {
   // Start hidden - updateLegend() reveals it once a chapter with an active
   // layer scrolls into view, so there's no empty box flash before then.
   legend.classList.add("legend-hidden");
+  // Legend defaults to the closed (collapsed, reopen-button-only) state -
+  // a reader has to explicitly reopen it, even once a chapter with active
+  // map layers scrolls into view. See updateLegend() below, which keeps
+  // this the steady state instead of popping back open on every chapter
+  // that has no active layers.
+  legend.classList.add("legend-closed");
 
   const closeBtn = document.createElement("button");
   closeBtn.type = "button";
@@ -551,6 +731,14 @@ function renderLegendShell(legendConfig) {
     const box = document.createElement("div");
     box.className = "legend-section";
     box.dataset.layer = layerKey;
+    // Each section IS the toggle - a reader clicks/taps/Enter-Space's the
+    // whole swatch group to flip that map layer on or off, independent of
+    // whatever the current chapter set it to (see setMapLayerVisibility()
+    // and the click handler below).
+    box.setAttribute("role", "switch");
+    box.setAttribute("tabindex", "0");
+    box.setAttribute("aria-checked", "false");
+    box.setAttribute("aria-label", `Toggle ${section.title} map layer`);
 
     const itemsHtml = section.items
       .map(
@@ -563,8 +751,28 @@ function renderLegendShell(legendConfig) {
       )
       .join("");
 
-    box.innerHTML = `<h4>${section.title}</h4>${itemsHtml}`;
+    box.innerHTML = `
+      <div class="legend-header">
+        <h4>${section.title}</h4>
+        <span class="legend-toggle" aria-hidden="true"><span class="legend-toggle-thumb"></span></span>
+      </div>
+      ${itemsHtml}
+    `;
     legend.appendChild(box);
+
+    const toggleLayer = () => {
+      const nowActive = !box.classList.contains("active");
+      box.classList.toggle("active", nowActive);
+      box.setAttribute("aria-checked", String(nowActive));
+      setMapLayerVisibility(layerKey, nowActive);
+    };
+    box.addEventListener("click", toggleLayer);
+    box.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        toggleLayer();
+      }
+    });
   });
 }
 
@@ -578,12 +786,21 @@ function updateLegend(activeLayers) {
   if (reopenBtn) {
     const showReopen = anyActive && legend.classList.contains("legend-closed");
     reopenBtn.classList.toggle("visible", showReopen);
-    if (!anyActive) legend.classList.remove("legend-closed");
+    // Closed is the persistent default - a chapter with no active layers
+    // re-affirms it (rather than clearing it) so the legend doesn't pop
+    // back open the next time an active-layer chapter is reached. Once a
+    // reader explicitly reopens it (legend-reopen / legend-close handlers
+    // above), it stays open until they close it again or scroll away.
+    if (!anyActive) legend.classList.add("legend-closed");
   }
 
+  // Chapter-scroll resets every section to that chapter's authored state -
+  // it overwrites any manual toggle left over from the previous chapter.
   document.querySelectorAll(".legend-section").forEach((section) => {
     const key = section.dataset.layer;
-    section.classList.toggle("active", Boolean(activeLayers[key]));
+    const active = Boolean(activeLayers[key]);
+    section.classList.toggle("active", active);
+    section.setAttribute("aria-checked", String(active));
   });
 }
 
@@ -754,57 +971,11 @@ function initMap(chapters, layerBounds) {
     scrollZoom: false
   });
 
+  mapInstance = map;
+
   initMapControls(map, chapters, layerBounds);
 
   map.on("load", () => {
-    map.addSource("risk-zone", {
-      type: "geojson",
-      data: "data/sample-risk-zone.geojson"
-    });
-    map.addLayer({
-      id: "risk-zone-fill",
-      type: "fill",
-      source: "risk-zone",
-      layout: { visibility: "none" },
-      paint: {
-        // Data-driven symbology: color keyed off the riskLevel property,
-        // the same way a real hazard-severity or vegetation-risk layer
-        // would be styled.
-        "fill-color": [
-          "match",
-          ["get", "riskLevel"],
-          "High", "#c0392b",
-          "Moderate", "#e67e22",
-          "#999999"
-        ],
-        "fill-opacity": 0.45
-      }
-    });
-    map.addLayer({
-      id: "risk-zone-outline",
-      type: "line",
-      source: "risk-zone",
-      layout: { visibility: "none" },
-      paint: { "line-color": "#7b241c", "line-width": 2 }
-    });
-
-    map.addSource("points", {
-      type: "geojson",
-      data: "data/sample-points.geojson"
-    });
-    map.addLayer({
-      id: "points-circle",
-      type: "circle",
-      source: "points",
-      layout: { visibility: "none" },
-      paint: {
-        "circle-radius": 7,
-        "circle-color": "#2c3e91",
-        "circle-stroke-color": "#fff",
-        "circle-stroke-width": 2
-      }
-    });
-
     // Marin County boundary (macro scale) - real County GIS data, converted
     // from shapefile (EPSG:2872) to WGS84. Outline only, no fill - it's just
     // context for where Homestead Valley sits within the county.
@@ -821,11 +992,17 @@ function initMap(chapters, layerBounds) {
     });
 
     // Homestead Valley / CSA 14 boundary (micro scale) - real Marin County
-    // GIS data (469-acre service area), reprojected to WGS84. Two paint
-    // treatments share the same source/geometry: a bold red "highlight" used
-    // when this shape is a small polygon picked out on the county-wide map,
-    // and a subtler dashed "boundary" treatment used once the map is zoomed
-    // all the way in to Homestead Valley itself.
+    // GIS data (469-acre service area), reprojected to WGS84. One paint
+    // treatment only (the bold red highlight) - a second, duplicate black
+    // dashed outline used to be layered on top of the same shape and was
+    // removed per client feedback ("2 boundaries for CSA14, use only 1").
+    //
+    // Symbology now switches per chapter (see updateHomesteadBoundaryStyle):
+    // bold red only on the chapter that also shows the Marin County outline
+    // (so the CSA14 boundary reads clearly against the county context);
+    // a subtle black outline + near-transparent black fill everywhere else,
+    // so it doesn't compete with the vegetation/elevation layers. Default
+    // paint below is the "everywhere else" state.
     map.addSource("homestead", {
       type: "geojson",
       data: "data/homestead.geojson"
@@ -835,34 +1012,77 @@ function initMap(chapters, layerBounds) {
       type: "fill",
       source: "homestead",
       layout: { visibility: "none" },
-      paint: { "fill-color": "#c0392b", "fill-opacity": 0.55 }
+      paint: { "fill-color": "#000000", "fill-opacity": 0.08 }
     });
     map.addLayer({
       id: "homestead-highlight-line",
       type: "line",
       source: "homestead",
       layout: { visibility: "none" },
-      paint: { "line-color": "#c0392b", "line-width": 2.5 }
+      paint: { "line-color": "#000000", "line-width": 2 }
+    });
+
+    // Vegetation density (NDVI) - real Sentinel-2-derived classification for
+    // this AOI (see ndvi_work/06_ndvi.py), not sample/dummy data. Four
+    // classes on a light-to-dark green ramp, used as a visual proxy for fuel
+    // load density across the wildland-urban interface.
+    map.addSource("vegetation", {
+      type: "geojson",
+      data: "data/homestead_ndvi_vegetation.geojson"
     });
     map.addLayer({
-      id: "homestead-boundary-fill",
+      id: "vegetation-fill",
       type: "fill",
-      source: "homestead",
-      layout: { visibility: "none" },
-      paint: { "fill-color": "#1c1c1c", "fill-opacity": 0.08 }
-    });
-    map.addLayer({
-      id: "homestead-boundary-line",
-      type: "line",
-      source: "homestead",
+      source: "vegetation",
       layout: { visibility: "none" },
       paint: {
-        "line-color": "#1c1c1c",
-        "line-width": 2.5,
-        "line-dasharray": [2, 1.5]
+        "fill-color": [
+          "match",
+          ["get", "ndvi_class"],
+          1, "#d9f0a3",
+          2, "#78c679",
+          3, "#31a354",
+          4, "#006837",
+          "#cccccc"
+        ],
+        "fill-opacity": 0.6
       }
     });
 
+    // Terrain / elevation - real USGS 3DEP 1m LIDAR DEM (see topo_work/),
+    // GDAL-polygonized (rasterio.features.shapes) into 8 hypsometric-tint
+    // classes. Same colormap and class breaks as the reference cartographic
+    // PNG (topo_work/homestead_topo_map.png / 09_render_map.py's "hyps"
+    // colormap), so the vector map and the static graphic read as one
+    // consistent symbology.
+    map.addSource("elevation", {
+      type: "geojson",
+      data: "data/homestead_elevation.geojson"
+    });
+    map.addLayer({
+      id: "elevation-fill",
+      type: "fill",
+      source: "elevation",
+      layout: { visibility: "none" },
+      paint: {
+        "fill-color": [
+          "match",
+          ["get", "elev_class"],
+          1, "#c9e2b6",
+          2, "#a8d18c",
+          3, "#cfe0a0",
+          4, "#e8dfa8",
+          5, "#dfc389",
+          6, "#cba173",
+          7, "#b8835f",
+          8, "#e8ddd3",
+          "#cccccc"
+        ],
+        "fill-opacity": 0.75
+      }
+    }, "homestead-highlight-line");
+
+    mapLayersReady = true;
     setupScrollTriggers(map, chapters, layerBounds);
   });
 
@@ -931,19 +1151,14 @@ function setupScrollTriggers(map, chapters, layerBounds) {
           flyToChapter(map, chapter, layerBounds);
         }
 
-        const riskVisibility = chapter.layers.risk ? "visible" : "none";
-        const pointsVisibility = chapter.layers.points ? "visible" : "none";
-        const marinVisibility = chapter.layers.marin ? "visible" : "none";
-        const homesteadHighlightVisibility = chapter.layers.homesteadHighlight ? "visible" : "none";
-        const homesteadBoundaryVisibility = chapter.layers.homesteadBoundary ? "visible" : "none";
-        map.setLayoutProperty("risk-zone-fill", "visibility", riskVisibility);
-        map.setLayoutProperty("risk-zone-outline", "visibility", riskVisibility);
-        map.setLayoutProperty("points-circle", "visibility", pointsVisibility);
-        map.setLayoutProperty("marin-line", "visibility", marinVisibility);
-        map.setLayoutProperty("homestead-highlight-fill", "visibility", homesteadHighlightVisibility);
-        map.setLayoutProperty("homestead-highlight-line", "visibility", homesteadHighlightVisibility);
-        map.setLayoutProperty("homestead-boundary-fill", "visibility", homesteadBoundaryVisibility);
-        map.setLayoutProperty("homestead-boundary-line", "visibility", homesteadBoundaryVisibility);
+        // Chapter-scroll is the "authoritative" layer state - it always wins
+        // over whatever a reader manually toggled in the legend while they
+        // were on the previous chapter, so the narrative never gets stuck
+        // showing/hiding a layer the new chapter didn't ask for.
+        Object.keys(LEGEND_LAYER_IDS).forEach((key) => {
+          setMapLayerVisibility(key, Boolean(chapter.layers[key]));
+        });
+        updateHomesteadBoundaryStyle(map, chapter);
 
         updateLegend(chapter.layers);
         updateToolbar(chapter.id, chapters);
