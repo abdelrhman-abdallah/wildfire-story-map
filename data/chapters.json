@@ -22,7 +22,8 @@
       "items": [
         {
           "label": "Marin County boundary",
-          "color": "#4a4a4a"
+          "color": "#4a4a4a",
+          "swatch": "line-solid"
         }
       ]
     },
@@ -31,7 +32,8 @@
       "items": [
         {
           "label": "Homestead Valley — CSA 14 (469 acres)",
-          "color": "#c0392b"
+          "color": "#000000",
+          "swatch": "line-solid"
         }
       ]
     },
@@ -92,6 +94,53 @@
           "color": "#e8ddd3"
         }
       ]
+    },
+    "bivariate": {
+      "title": "Fuel Load × Elevation",
+      "symbology": "matrix",
+      "matrix": {
+        "rows": [
+          ["#e4e2dd", "#a8bccb", "#6b95ba", "#2f6fa8"],
+          ["#d4a3a2", "#a08a9b", "#6c7194", "#38588c"],
+          ["#c36367", "#98586a", "#6c4d6d", "#414271"],
+          ["#b3242c", "#90263a", "#6d2947", "#4a2b55"]
+        ],
+        "yAxis": {
+          "label": "Vegetation density (fuel load) →",
+          "ticks": ["Sparse", "Moderate", "Dense", "Very dense"]
+        },
+        "xAxis": {
+          "label": "Elevation →",
+          "edges": [12, 156, 265, 393, 822],
+          "unit": "ft"
+        },
+        "note": "Red = fuel load, blue = elevation, dark plum = both high. Elevation classes are quartiles of the vegetated area (≈97 ac each); vegetation classes use the same NDVI breaks as the Vegetation Density layer. 385.6 ac of vegetated ground."
+      }
+    },
+    "contours": {
+      "title": "Elevation Contours",
+      "items": [
+        {
+          "label": "20 ft interval — labeled every 40 ft",
+          "color": "#8a6d3b",
+          "swatch": "line-solid"
+        }
+      ]
+    },
+    "streets": {
+      "title": "Road Network",
+      "items": [
+        {
+          "label": "Residential / through streets (solid)",
+          "color": "#2b2f33",
+          "swatch": "line-solid"
+        },
+        {
+          "label": "Service drives, footpaths & trails (dotted)",
+          "color": "#2b2f33",
+          "swatch": "line-dashed"
+        }
+      ]
     }
   },
   "footer": {
@@ -127,9 +176,9 @@
       "eyebrow": "A StoryMap for Homestead Valley",
       "title": "Living With Wildfire in Homestead Valley",
       "description": "For generations, Homestead Valley residents have worked together to preserve something unique and extraordinary — a mountain village community where homes, forests, ridgelines and open space exist side by side, just twenty minutes from San Francisco.",
-      "image": {
-        "src": "media/HV_Pixie_Panoramic.jpg",
-        "alt": "Panoramic view over Homestead Valley"
+      "backgroundVideo": {
+        "src": "media/HV_PANORAMIC_VIDEO_1.mp4",
+        "playbackRate": 2
       },
       "mapPosition": "none",
       "location": {
@@ -176,7 +225,7 @@
         "vegetation": false,
         "elevation": false
       },
-      "mediaPosition": "right"
+      "mediaPosition": "full"
     },
     {
       "id": "elevated-risk",
@@ -284,7 +333,8 @@
         "marin": false,
         "homesteadHighlight": true,
         "vegetation": false,
-        "elevation": false
+        "elevation": false,
+        "wind": true
       }
     },
     {
@@ -305,11 +355,14 @@
         "bearing": 0
       },
       "fitToLayer": "homestead",
+      "reducedOpacity": true,
       "layers": {
         "marin": false,
         "homesteadHighlight": true,
-        "vegetation": false,
-        "elevation": false
+        "vegetation": true,
+        "elevation": true,
+        "streets": true,
+        "wind": true
       }
     },
     {
@@ -324,10 +377,10 @@
           "type": "image",
           "src": "media/G01_L2_topography_aspect.png",
           "alt": "Infographic showing how slope, canyons and wind drive wildfire spread across Homestead's terrain",
-          "caption": "Client graphic: how slope, canyons and southwest aspect drive wildfire spread."
+          "caption": "How slope, canyons and southwest aspect drive wildfire spread."
         }
       ],
-      "mapNote": "Elevation shown here is real USGS 3DEP 1m LIDAR-derived terrain (see topo_work/), classed into the same 8 hypsometric-tint bands used in the client's topography graphic above. Separate slope/aspect layers remain in that graphic only.",
+      "mapNote": "Elevation shown here is real USGS 3DEP 1m LIDAR-derived terrain (see topo_work/), classed into the same 8 hypsometric-tint bands used in the topography graphic above. Separate slope/aspect layers remain in that graphic only.",
       "mapPosition": "left",
       "location": {
         "center": [
@@ -391,10 +444,10 @@
           "type": "image",
           "src": "media/G02_L1_Wind_Patterns.png",
           "alt": "Infographic comparing Diablo/offshore wind events and reverse/onshore (southwest) wind events in Homestead Valley",
-          "caption": "Client graphic: Diablo/offshore wind vs. reverse/onshore (southwest) wind scenarios."
+          "caption": "Diablo/offshore wind vs. reverse/onshore (southwest) wind scenarios."
         }
       ],
-      "mapNote": "Directional indicators shown are a placeholder — final version will show Diablo/offshore and reverse/onshore wind scenarios.",
+      "mapNote": "Diablo (offshore) and reverse (onshore) wind arrows are schematic direction indicators, not a meteorological model.",
       "mapPosition": "left",
       "location": {
         "center": [
@@ -409,7 +462,8 @@
         "marin": false,
         "homesteadHighlight": true,
         "vegetation": false,
-        "elevation": false
+        "elevation": false,
+        "wind": true
       },
       "fitToLayer": "homestead"
     },
@@ -420,7 +474,7 @@
       "navLabel": "Access & Egress",
       "title": "See the Access Challenge",
       "description": "<p>Terrain also shapes our ability to evacuate — and firefighters' ability to reach us.</p><p>Winding hillside streets, ridgeline roads, dead ends, cul-de-sacs and limited access/egress areas mean structure defense cannot always be assumed during a fast-moving incident.</p>",
-      "mapNote": "Road network shown is a placeholder — final version will distinguish main evacuation/access corridors from smaller neighborhood roads.",
+      "mapNote": "Elevation contours (20 ft interval, labeled every 40 ft) show the terrain evacuation routes have to climb. Road network distinguishes through-streets (solid) from service drives, footpaths and trails (dotted) — the routes actually available for evacuation and fire-apparatus access.",
       "mapPosition": "left",
       "location": {
         "center": [
@@ -435,7 +489,9 @@
         "marin": false,
         "homesteadHighlight": true,
         "vegetation": false,
-        "elevation": false
+        "elevation": false,
+        "contours": true,
+        "streets": true
       },
       "fitToLayer": "homestead"
     },
@@ -451,7 +507,7 @@
           "type": "image",
           "src": "media/HVLT_Trail_Map.png",
           "alt": "Homestead Valley Land Trust trail map showing the trail network, trailheads and adjacent open space",
-          "caption": "Client graphic: the HVLT trail network."
+          "caption": "The HVLT trail network."
         }
       ],
       "mapNote": "Trail overlay shown is a placeholder — final version will show the HVLT trail system with labeled trailheads and ridges.",
@@ -480,6 +536,7 @@
       "navLabel": "How Homes Ignite",
       "title": "Where Do We Have the Greatest Ability to Intervene?",
       "description": "<p>This is the landscape we have chosen to live in. The question is not how to eliminate wildfire from it, but how to live more resiliently within it.</p><p>If the goal is to prevent wildfire from becoming a neighborhood fire, where do we have the greatest ability to intervene?</p><div class=\"key-line\">The answer begins with understanding how homes actually ignite.</div>",
+      "mapNote": "Fuel load and elevation are mapped together as a bivariate surface: red intensifies with vegetation density, blue with elevation, and the two combine to dark plum where both are high — the ground where fuel treatment and access work pay off most. Pale neutral means neither factor is elevated. Read any color off the 4×4 legend grid to recover both values.",
       "mapPosition": "left",
       "location": {
         "center": [
@@ -494,7 +551,8 @@
         "marin": false,
         "homesteadHighlight": true,
         "vegetation": false,
-        "elevation": false
+        "elevation": false,
+        "bivariate": true
       },
       "fitToLayer": "homestead"
     },
@@ -738,7 +796,7 @@
           "type": "image",
           "src": "media/Diablo Wind Treated vs. Untreated.png",
           "alt": "Side-by-side hillside scenarios: an untreated home with continuous fire pathways under Diablo wind versus a treated, de-energized home with interrupted fuel breaks, same 25-degree slope",
-          "caption": "Client graphic: vegetation management interrupts the fire pathway, even under the same slope, fuel and Diablo-wind conditions."
+          "caption": "Vegetation management interrupts the fire pathway, even under the same slope, fuel and Diablo-wind conditions."
         }
       ],
       "mediaPosition": "right",
@@ -771,7 +829,7 @@
           "type": "image",
           "src": "media/De-Energize and Ember Resist.png",
           "alt": "Combined infographic: de-energizing an approaching fire pathway (top) and preparing a home against embers, before and after (bottom)",
-          "caption": "Client graphic: look outward to de-energize the fire, look inward to make the home ember ready."
+          "caption": "Look outward to de-energize the fire, look inward to make the home ember ready."
         }
       ],
       "mediaPosition": "right",
@@ -938,7 +996,7 @@
           "type": "image",
           "src": "media/G02_L2_Understanding_Your_Home_s_Risk.png",
           "alt": "Framework showing how terrain exposure (ridge/steep slope vs. gentle slope) and surroundings (open space vs. developed lots) combine into four exposure profiles, each with a different mitigation focus",
-          "caption": "Client graphic: your home's unique exposure profile — no two Homestead properties are exactly alike."
+          "caption": "Your home's unique exposure profile — no two Homestead properties are exactly alike."
         },
         {
           "type": "image",
@@ -977,7 +1035,7 @@
           "type": "image",
           "src": "media/Hardened homes resist ignition.png",
           "alt": "Aerial illustration of the same hillside neighborhood showing continuous, untreated vegetation creating ignition pathways between homes, versus treated, hardened, spaced-out homes that interrupt those pathways",
-          "caption": "Client graphic: treated, spaced homes interrupt the pathways that connect one property's risk to another's."
+          "caption": "Treated, spaced homes interrupt the pathways that connect one property's risk to another's."
         }
       ],
       "mediaPosition": "right",
@@ -1034,7 +1092,7 @@
           "type": "image",
           "src": "media/Wildfire Resilience Neighborhood Poster.png",
           "alt": "Poster: when most homes in a neighborhood take action, ember pathways between homes are interrupted; about 70 percent of homes protected is the tipping point for meaningful neighborhood risk reduction",
-          "caption": "Client graphic: neighborhood participation compounds — reach out to the Safety Committee at firewise@hvlt.org to start or join an Ember Ready Neighborhood pilot."
+          "caption": "Neighborhood participation compounds — reach out to the Safety Committee at firewise@hvlt.org to start or join an Ember Ready Neighborhood pilot."
         }
       ],
       "mediaPosition": "right",
@@ -1067,7 +1125,7 @@
           "type": "image",
           "src": "media/Community Stewardship Timeline_ Building Resilience Together.png",
           "alt": "Timeline of community stewardship in Homestead Valley from Coast Miwok stewardship (~8000 BC) through Spanish colonization, HVCA incorporation in 1958, the 1973 Community Acts, Firewise recognition in 2015, major wildfire grants, and Measure C approved in 2020, to Resilient Neighbors, Resilient Neighborhoods in 2026 and beyond",
-          "caption": "Client graphic: a history of community stewardship in Homestead Valley."
+          "caption": "A history of community stewardship in Homestead Valley."
         }
       ],
       "mediaPosition": "right",
@@ -1100,7 +1158,7 @@
           "type": "image",
           "src": "media/HV_Original_Map_Open_Space.png",
           "alt": "Original map of Homestead Valley Land Trust's preserved open space parcels",
-          "caption": "Client graphic: the original map of the open space this generation inherited — and is now building on. Source: HVLT (hvlt.org/history)."
+          "caption": "The original map of the open space this generation inherited — and is now building on. Source: HVLT (hvlt.org/history)."
         }
       ],
       "mediaPosition": "right",

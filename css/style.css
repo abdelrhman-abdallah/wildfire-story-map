@@ -72,6 +72,19 @@ body.map-pos-none #map {
   pointer-events: none;
 }
 
+/* Fullscreen has to beat the docking rules above: those pin the map to a
+   58%-wide half of the screen (and can drop it to opacity 0), which would
+   otherwise survive into fullscreen and render the map as an offset,
+   invisible strip. Declared after them so it wins on source order. */
+#map:fullscreen {
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 1;
+  pointer-events: auto;
+}
+
 /* ---------------------------------------------------------------------
    Custom map controls - Esri-style white rounded-square buttons:
    fullscreen top-right, home + zoom in/out stacked bottom-right.
@@ -144,6 +157,85 @@ body.map-pos-none #map {
   border-bottom: 1px solid rgba(0, 0, 0, 0.12);
 }
 
+/* ---------------------------------------------------------------------
+   Wind direction - a fan of arrows sitting on the NE and SW flanks of the
+   homestead boundary (offshore Diablo blowing NE->SW, onshore reverse
+   blowing SW->NE). The arrows are MapLibre markers pinned to real
+   coordinates, so they pan/zoom/rotate with the map; only their styling
+   lives here. This block is the small top-center key that names the two
+   colors. Hidden by default; a chapter opts in via chapter.layers.wind.
+--------------------------------------------------------------------- */
+.wind-indicator {
+  position: absolute;
+  top: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+  display: none;
+  flex-direction: column;
+  gap: 0.2rem;
+  background: rgba(255, 255, 255, 0.92);
+  border-radius: 8px;
+  padding: 0.35rem 0.7rem;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+}
+
+.wind-indicator.visible {
+  display: flex;
+}
+
+.wind-key-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--font-heading);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--color-dark);
+  white-space: nowrap;
+}
+
+.wind-key-item::before {
+  content: "";
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  flex: none;
+}
+
+.wind-key-diablo::before { background: var(--color-secondary); }
+.wind-key-reverse::before { background: var(--color-accent); }
+
+.wind-key-item small {
+  font-size: 0.62rem;
+  font-weight: 500;
+  color: #666;
+}
+
+/* MapLibre owns the marker element's `transform` (position + bearing), so
+   never set one here - size, color and visibility only. */
+.wind-arrow {
+  width: 2.6rem;
+  height: 4.74rem;
+  display: none;
+  pointer-events: none;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.35));
+}
+
+.wind-arrow.visible {
+  display: block;
+}
+
+.wind-arrow svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.wind-arrow-diablo { color: var(--color-secondary); }
+.wind-arrow-reverse { color: var(--color-accent); }
+
 #story {
   position: relative;
   z-index: 1;
@@ -165,6 +257,9 @@ body.map-pos-none #map {
   pointer-events: none;
   left: 0;
   width: 100%;
+  /* Hard guarantee that nothing inside the panel can ever paint past its
+     edges and push the page into horizontal scroll. */
+  overflow: hidden;
   transition: opacity 0.5s ease, left 0.5s ease, width 0.5s ease;
 }
 
@@ -178,6 +273,17 @@ body.media-pos-left #media-sidecar {
 body.media-pos-right #media-sidecar {
   left: 42%;
   width: 58%;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Full-bleed variant for media that is much wider than a half-viewport
+   panel can usefully show (e.g. the 3:1 valley panorama) - the media takes
+   the entire width and the chapter's text card floats on top of it, rather
+   than the image shrinking to a thin letterboxed band inside a 58% panel. */
+body.media-pos-full #media-sidecar {
+  left: 0;
+  width: 100%;
   opacity: 1;
   pointer-events: auto;
 }
@@ -208,24 +314,53 @@ body.media-pos-none #media-sidecar {
   height: 100%;
 }
 
+/* Each slide is a padded box that centers its media, so the image floats
+   with breathing room instead of running edge-to-edge into the map, the
+   text card and the window frame. The padding is asymmetric at the bottom
+   to leave room for the caption strip below. */
+#media-sidecar .media-carousel-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  padding: 2rem 2rem 3.25rem;
+}
+
+/* max-width/max-height with auto sizing (rather than 100%/100% + object-fit)
+   means the ELEMENT box shrinks to the image's real aspect ratio, not just
+   the pixels inside it - so the rounded corners and shadow hug the artwork
+   instead of framing empty letterbox bands, and the image can never exceed
+   its slide. These are informational graphics (posters, diagrams,
+   before/after panels): cropping them to fill the panel, as object-fit:cover
+   did, hid content and forced the reader into the lightbox to see the whole
+   thing. */
 #media-sidecar .media-carousel-item img,
 #media-sidecar .media-carousel-item video {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 0;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 10px 34px rgba(0, 0, 0, 0.22);
   margin-top: 0;
 }
 
+/* Caption sits in the padded strip BELOW the image now, on the panel's own
+   light background - the old dark gradient was there to stay readable when
+   the image ran edge-to-edge underneath it, which it no longer does. */
 #media-sidecar figcaption {
   position: absolute;
   left: 0;
   right: 0;
   bottom: 0;
   margin: 0;
-  padding: 0.75rem 1rem;
-  background: linear-gradient(to top, rgba(0,0,0,0.65), rgba(0,0,0,0));
-  color: #fff;
+  padding: 0.6rem 2rem 0.9rem;
+  box-sizing: border-box;
+  text-align: center;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: #4a4a4a;
 }
 
 .chapter {
@@ -266,6 +401,26 @@ body.media-pos-none #media-sidecar {
 
 .chapter[data-map-position="none"] .chapter-heading {
   justify-content: center;
+}
+
+/* Chapters using "mediaPosition": "full" - the media spans the whole
+   viewport behind the card, so the card sits on top of it at reading width
+   and left-aligned (the centered treatment above is for a card that owns
+   the whole screen, which isn't the case here). Must come after the
+   [data-map-position="none"] rules: same specificity, later wins. */
+.chapter[data-media-full="true"] {
+  justify-content: flex-start;
+}
+
+.chapter[data-media-full="true"] .chapter-content {
+  max-width: 460px;
+  text-align: left;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 6px 30px rgba(0, 0, 0, 0.28);
+}
+
+.chapter[data-media-full="true"] .chapter-heading {
+  justify-content: flex-start;
 }
 
 .chapter-heading {
@@ -604,6 +759,70 @@ body.image-modal-open {
   background-size: cover;
   background-position: center;
   z-index: 0;
+}
+
+/* Autoplaying background video variant of .hero-bg (see renderHeroChapter()
+   in js/story.js) - falls back to the plain background-image .hero-bg above
+   when the chapter has no backgroundVideo or the reader has
+   prefers-reduced-motion set. */
+.hero-bg-video {
+  background: #000;
+}
+
+.hero-bg-media {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.hero-bg-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0,0,0,0.35), rgba(0,0,0,0.6));
+}
+
+/* Play/pause for the hero background video (see renderHeroChapter()). Sits
+   above .hero-bg-overlay but is deliberately understated - it's a control
+   for an ambient background, not a media player, so it stays out of the
+   title's way until hovered. */
+.hero-video-toggle {
+  position: absolute;
+  bottom: 1.25rem;
+  right: 1.25rem;
+  z-index: 2;
+  /* #story is pointer-events:none so scroll/drag passes through to the map
+     underneath; interactive bits inside it have to opt back in (same as
+     .hero-content and .map-control-btn do). Without this the button renders
+     but swallows nothing - every click goes straight past it. */
+  pointer-events: auto;
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.4);
+  color: #fff;
+  cursor: pointer;
+  opacity: 0.65;
+  transition: opacity 0.2s ease, background 0.2s ease;
+}
+
+.hero-video-toggle svg {
+  width: 100%;
+  height: 100%;
+  fill: currentColor;
+}
+
+.hero-video-toggle:hover,
+.hero-video-toggle:focus-visible {
+  opacity: 1;
+  background: rgba(0, 0, 0, 0.65);
 }
 
 .hero-content {
@@ -976,6 +1195,112 @@ body.image-modal-open {
   display: inline-block;
 }
 
+/* Line-based swatch variants (see renderLegendShell() in js/story.js) - a
+   short rule instead of a filled block, so legend items for line map
+   layers (marin/homesteadHighlight boundary, contours, streets) actually
+   look like the line they represent instead of a flat color chip. Color
+   comes from item.color via the inline border-top-color set in JS. */
+.legend-swatch-line-solid,
+.legend-swatch-line-dashed {
+  width: 18px;
+  height: 0;
+  border-radius: 0;
+  background: transparent;
+  border-top: 3px solid;
+}
+
+/* Dotted, not dashed, to match the round-capped dot pattern the trail
+   layer actually draws on the map (see TRAIL_DASHARRAY in js/story.js).
+   Same width and color as the solid variant - the pattern is the only
+   difference, on the map and here. */
+.legend-swatch-line-dashed {
+  border-top-style: dotted;
+}
+
+/* Bivariate matrix symbology (renderMatrixSymbology() in js/story.js) - a 2D
+   grid of color cells with one axis per variable, so a reader decodes a map
+   color back into a PAIR of class values instead of matching it against 16
+   unordered chips. Sized to sit in the same horizontal legend strip as the
+   list-style sections without making the whole legend taller. */
+.legend-matrix {
+  display: flex;
+  align-items: stretch;
+  gap: 0.25rem;
+}
+
+/* Rotated so the axis arrow points UP alongside the grid, matching the fact
+   that rows are emitted highest-class-first (see renderMatrixSymbology). */
+.legend-matrix-ylabel {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-size: 0.55rem;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  text-align: center;
+  color: #555;
+  white-space: nowrap;
+}
+
+/* One grid holds the y tick column, the cells, the x edge row and the x axis
+   label, which is what keeps the edge numbers aligned to the cell boundaries
+   regardless of how wide the tick labels are. */
+.legend-matrix-grid {
+  display: grid;
+  grid-template-columns: auto repeat(var(--legend-matrix-cols, 4), 19px);
+  gap: 2px;
+  align-items: center;
+}
+
+.legend-matrix-cell {
+  width: 19px;
+  height: 19px;
+  border-radius: 2px;
+  display: inline-block;
+  /* Hairline separators: without them, adjacent cells of similar lightness
+     (the middle of the matrix) visually merge into a blob and the grid stops
+     reading as discrete classes. */
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.55);
+}
+
+.legend-matrix-ytick {
+  font-size: 0.6rem;
+  line-height: 1;
+  text-align: right;
+  padding-right: 0.15rem;
+  white-space: nowrap;
+  color: #444;
+}
+
+/* space-between puts the first and last number flush with the two ends of
+   the cell band and the inner ones on the boundaries between cells. */
+.legend-matrix-xedges {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.52rem;
+  line-height: 1;
+  color: #666;
+  /* Half a cell of bleed each side so the end numbers can centre on the
+     outer boundaries rather than being clipped inside the band. */
+  margin: 0.1rem -0.5rem 0;
+}
+
+.legend-matrix-xlabel {
+  font-size: 0.55rem;
+  line-height: 1;
+  text-align: center;
+  letter-spacing: 0.02em;
+  color: #555;
+  margin-top: 0.05rem;
+}
+
+.legend-matrix-note {
+  margin: 0.35rem 0 0;
+  max-width: 210px;
+  font-size: 0.55rem;
+  line-height: 1.35;
+  color: #666;
+}
+
 /* Legend position + empty-state, both driven by data/chapters.json "settings" */
 #legend.legend-right {
   left: auto;
@@ -1042,4 +1367,296 @@ body.image-modal-open {
   font-size: 0.75rem;
   opacity: 0.6;
   margin: 0;
+}
+
+/* ---------------------------------------------------------------------
+   Block Explorer - standalone in-flow section (not the docked/fixed story
+   map) with its own MapLibre instance, lazily initialized on scroll-into-
+   view (see initExplorerObserver()/initExplorerMap() in js/story.js).
+   Sits right after the "Ability to Intervene" chapter (see
+   renderChapters()). Full-width centered layout, mirroring the general
+   .chapter rhythm (same top padding math) without using the .chapter
+   class itself, since it isn't part of the scroll-triggered map-docking
+   system.
+--------------------------------------------------------------------- */
+.explorer-section {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: calc(var(--nav-offset, 0px) + 3rem) 2.5rem 4rem;
+  box-sizing: border-box;
+  background: var(--color-light);
+  text-align: center;
+  /* #story is pointer-events:none so the fixed map behind it stays
+     draggable through the gaps between chapter cards - every interactive
+     descendant has to opt back in. Without this the Explorer's map swallows
+     no mouse events at all: no clicks, no hover, no cursor change. */
+  pointer-events: auto;
+}
+
+/* The Explorer owns the viewport while it's on screen: the docked story map,
+   its fixed legend and the wind compass all belong to the scroll-driven
+   narrative, not to this map, and would otherwise hang over this section
+   still showing the previous chapter's state. Toggled by the observer in
+   initExplorerObserver(). */
+body.explorer-active #map,
+body.explorer-active #media-sidecar {
+  opacity: 0;
+  pointer-events: none;
+}
+
+body.explorer-active #legend,
+body.explorer-active .legend-reopen {
+  display: none;
+}
+
+.explorer-header {
+  max-width: 640px;
+  margin: 0 0 1.75rem;
+}
+
+.explorer-badge {
+  display: inline-block;
+  font-size: 0.7rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  background: var(--color-secondary);
+  color: #fff;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-bottom: 0.6rem;
+  font-family: var(--font-heading);
+}
+
+.explorer-header h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1.6rem;
+}
+
+.explorer-header p {
+  margin: 0;
+  line-height: 1.6;
+  opacity: 0.85;
+}
+
+.explorer-map-wrap {
+  position: relative;
+  width: 100%;
+  height: min(80vh, 820px);
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+  background: #e9e9e9;
+}
+
+#explorer-map {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* Blocks are the only thing on this map worth clicking, and clicking one is
+   the whole point of the section - so the pointer cursor is the resting
+   state here, instead of MapLibre's default grab/grabbing pan affordance. */
+#explorer-map .maplibregl-canvas-container.maplibregl-interactive,
+#explorer-map .maplibregl-canvas-container.maplibregl-interactive:active,
+#explorer-map .maplibregl-canvas-container.maplibregl-interactive .maplibregl-canvas {
+  cursor: pointer;
+}
+
+/* Mirrors #map-fullscreen-btn's top-right placement, but expands the
+   Explorer's own wrap - see initExplorerMap() for why this map needs a
+   separate button rather than sharing the story map's. */
+.explorer-map-fullscreen {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  z-index: 2;
+}
+
+/* The wrap is height-capped for its inline slot in the page; in fullscreen
+   it owns the whole screen, so those caps have to come off or the map
+   renders as a letterboxed strip on a black backdrop. */
+.explorer-map-wrap:fullscreen {
+  height: 100%;
+  width: 100%;
+  border-radius: 0;
+}
+
+/* Reuses .map-control-btn's look (white rounded-square, dark icon) - same
+   bottom-right stack as the main map's home/zoom controls, scoped to this
+   wrap instead of the fixed #map viewport. */
+.explorer-map-controls {
+  position: absolute;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: flex-end;
+}
+
+/* The Explorer's own legend - same .legend-section switches as the story
+   legend (so a row is both a key and an on/off control), but anchored
+   inside this section's map instead of the viewport, and listing only the
+   layers this map actually carries. Column layout + scroll because the
+   elevation key alone is 8 classes tall. */
+.explorer-legend {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  z-index: 2;
+  width: 250px;
+  max-height: calc(100% - 2rem);
+  overflow-y: auto;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+  padding: 0.7rem 1rem 0.7rem 0.9rem;
+  box-sizing: border-box;
+  text-align: left;
+  font-size: 0.8rem;
+}
+
+.explorer-legend.legend-closed {
+  display: none;
+}
+
+.explorer-legend-hint {
+  margin: 0 1.2rem 0.6rem 0;
+  font-size: 0.72rem;
+  font-style: italic;
+  color: #777;
+  line-height: 1.35;
+}
+
+.explorer-legend-hint.hidden {
+  display: none;
+}
+
+.explorer-legend-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.explorer-legend .legend-section {
+  min-width: 0;
+  border-right: none;
+  padding: 0.3rem 0.4rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.explorer-legend .legend-section:last-child {
+  border-bottom: none;
+}
+
+/* A per-block layer with no block selected has nothing to draw, so its row is
+   dimmed and its click handler short-circuits (see setExplorerBlockLayers) -
+   otherwise the switch looks live but would only ever produce an empty map. */
+.explorer-legend .legend-section-unavailable {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.explorer-legend-reopen {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  z-index: 2;
+  display: none;
+  font-family: var(--font-heading);
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--color-dark);
+  background: rgba(255, 255, 255, 0.95);
+  border: none;
+  border-radius: 999px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+}
+
+.explorer-legend-reopen.visible {
+  display: inline-block;
+}
+
+/* Block detail popup - anchored on the clicked block (see
+   openExplorerPopup()), overriding MapLibre's default white-box popup
+   chrome to match the story's card styling. */
+.explorer-popup .maplibregl-popup-content {
+  border-radius: 10px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.25);
+  padding: 0.95rem 1.2rem 1rem;
+  text-align: left;
+  font-family: var(--font-body);
+}
+
+.explorer-popup .maplibregl-popup-close-button {
+  width: 1.6rem;
+  height: 1.6rem;
+  font-size: 1.2rem;
+  color: #666;
+  border-radius: 0 10px 0 0;
+}
+
+.explorer-popup .maplibregl-popup-close-button:hover {
+  background: transparent;
+  color: var(--color-primary);
+}
+
+.explorer-popup-eyebrow {
+  margin: 0 1.2rem 0.2rem 0;
+  font-family: var(--font-heading);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-secondary);
+}
+
+.explorer-popup h3 {
+  margin: 0 0 0.55rem;
+  font-size: 1.05rem;
+  line-height: 1.35;
+  padding-right: 0.8rem;
+}
+
+.explorer-popup-captain {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  padding-top: 0.5rem;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.explorer-popup-captain strong {
+  display: block;
+  font-family: var(--font-heading);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #777;
+  margin-bottom: 0.1rem;
+}
+
+@media (max-width: 860px) {
+  .explorer-section {
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
+  }
+
+  .explorer-map-wrap {
+    height: min(75vh, 560px);
+  }
+
+  .explorer-legend {
+    width: calc(100% - 2rem);
+    max-height: 45%;
+  }
 }
