@@ -366,7 +366,8 @@
         "vegetation": true,
         "elevation": true,
         "streets": true,
-        "wind": true
+        "wind": true,
+        "hillshade": true
       }
     },
     {
@@ -384,7 +385,7 @@
           "caption": "How slope, canyons and southwest aspect drive wildfire spread."
         }
       ],
-      "mapNote": "Elevation shown here is real USGS 3DEP 1m LIDAR-derived terrain (see topo_work/), classed into the same 8 hypsometric-tint bands used in the topography graphic above. Separate slope/aspect layers remain in that graphic only.",
+      "mapNote": "Elevation shown here is real USGS 3DEP 1m LIDAR-derived terrain (see topo_work/), classed into the same 8 hypsometric-tint bands used in the topography graphic above, over a hillshade rendered from the same 1m DEM and clipped to the CSA 14 boundary. Separate slope/aspect layers remain in that graphic only.",
       "mapPosition": "left",
       "location": {
         "center": [
@@ -399,7 +400,8 @@
         "marin": false,
         "homesteadHighlight": true,
         "vegetation": false,
-        "elevation": true
+        "elevation": true,
+        "hillshade": true
       },
       "fitToLayer": "homestead"
     },
@@ -432,7 +434,8 @@
         "marin": false,
         "homesteadHighlight": true,
         "vegetation": true,
-        "elevation": false
+        "elevation": false,
+        "hillshade": true
       },
       "fitToLayer": "homestead"
     },

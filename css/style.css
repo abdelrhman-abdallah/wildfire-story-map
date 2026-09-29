@@ -996,6 +996,26 @@ body.image-modal-open {
   color: #fff;
 }
 
+/* The Block Explorer pill. Same shape and size as the section pills it sits
+   among, but filled rather than outlined so it reads as "this one takes you
+   to a tool", not "this is another chapter group". It has no sub-row, so
+   selecting it collapses the second tier - that's handled entirely by
+   showToolbarSection() finding no .toolbar-subrow with a matching
+   data-section. */
+.toolbar-section-standalone {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.55);
+  color: #fff;
+}
+
+/* :not(.active) so hovering the pill while you're already in the Explorer
+   doesn't knock the accent highlight back off - .toolbar-section-item.active
+   and this rule are the same specificity, and this one is later in the
+   file. */
+.toolbar-section-standalone:not(.active):hover {
+  background: rgba(255, 255, 255, 0.24);
+}
+
 .toolbar-item {
   flex: none;
   font-family: var(--font-heading);
@@ -1035,13 +1055,19 @@ body.image-modal-open {
   border-radius: 8px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
   padding: 0.6rem 2.2rem 0.6rem 1rem;
-  /* Sections lay out left-to-right (see .legend-section) so the legend
-     grows wider and stays short, instead of stacking into a tall column. */
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  gap: 0.35rem 1.1rem;
+  /* A fixed 3-column grid, NOT flex-wrap. Wrapping sized each section to its
+     own content, so every row started at a different x and the columns never
+     lined up down the box (the 7 sections landed 3 / 3 / 1 at ragged
+     offsets). Equal 1fr tracks give all three columns the same width and the
+     same left edge, so section titles, swatches and labels stack into three
+     clean aligned columns however many sections there are.
+     minmax(0, 1fr) rather than 1fr so a long label wraps inside its column
+     instead of forcing the track wider than its share. */
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: start;
+  justify-items: stretch;
+  gap: 0.5rem 1.1rem;
   max-width: min(94vw, 860px);
   font-size: 0.8rem;
   transition: opacity 0.2s ease, transform 0.2s ease;
@@ -1104,8 +1130,11 @@ body.image-modal-open {
    entirely and would've made them impossible to switch back on). */
 .legend-section {
   opacity: 0.45;
-  flex: 0 0 auto;
-  min-width: 150px;
+  /* min-width:0 lets a grid item shrink below its content's intrinsic width,
+     which is what keeps all three tracks exactly 1fr wide - the default
+     (auto) would let the widest section push its column out and break the
+     alignment the grid is there to provide. */
+  min-width: 0;
   margin: 0;
   padding: 0.15rem 0.9rem 0.15rem 0.3rem;
   border-right: 1px solid rgba(0, 0, 0, 0.08);
@@ -1114,6 +1143,11 @@ body.image-modal-open {
   transition: opacity 0.2s ease, background 0.15s ease;
 }
 
+/* Column separators: drop the rule on the right-hand column only, so it
+   reads as two dividers BETWEEN three columns rather than a trailing line
+   down the outside edge. nth-of-type (not nth-child) because #legend's first
+   child is the close button, which would otherwise shift the count by one. */
+.legend-section:nth-of-type(3n),
 .legend-section:last-child {
   border-right: none;
   padding-right: 0.3rem;
@@ -1658,5 +1692,37 @@ body.explorer-active .legend-reopen {
   .explorer-legend {
     width: calc(100% - 2rem);
     max-height: 45%;
+  }
+
+  /* Three 1fr tracks inside a ~320px-wide box would give each column about
+     100px - narrower than the longest legend labels and the bivariate matrix.
+     Drop to two columns; the alignment the grid provides is the point, not
+     the specific count. The separator moves to the 2nd column accordingly
+     (see the base rule for why nth-of-type). */
+  #legend {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .legend-section:nth-of-type(3n) {
+    border-right: 1px solid rgba(0, 0, 0, 0.08);
+    padding-right: 0.9rem;
+  }
+
+  .legend-section:nth-of-type(2n),
+  .legend-section:last-child {
+    border-right: none;
+    padding-right: 0.3rem;
+  }
+}
+
+@media (max-width: 560px) {
+  #legend {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .legend-section,
+  .legend-section:nth-of-type(3n) {
+    border-right: none;
+    padding-right: 0.3rem;
   }
 }

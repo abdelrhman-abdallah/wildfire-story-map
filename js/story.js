@@ -50,8 +50,78 @@ const LEGEND_LAYER_IDS = {
     "streets-halo-trail",
     "streets-line-main",
     "streets-line-trail"
-  ]
+  ],
+  // Deliberately absent from chapters.json's "legend" config, unlike every
+  // other key here. Chapters still switch it on/off through this table (see
+  // setupScrollTriggers), but it gets no legend section: it carries no
+  // classes, no values and nothing to decode - it's a shading treatment
+  // applied to the layer above it, not a dataset a reader looks up.
+  hillshade: ["hillshade-relief"]
 };
+
+// --- Hillshade relief overlay -------------------------------------------
+// A grayscale hillshade of the USGS 3DEP 1 m LIDAR DEM, clipped to the CSA 14
+// boundary and warped to Web Mercator by topo_work/10_hillshade_overlay.py.
+// It is drawn UNDERNEATH the elevation / vegetation choropleths, which are
+// translucent, so the relief shows through them and the flat 2D fill reads as
+// terrain - the standard "hypsometric tint over hillshade" recipe.
+//
+// Delivered as a MapLibre `image` source (one PNG + four corner coordinates)
+// rather than a tiled raster source: it's a single ~2.5 x 1.5 km overlay, so
+// cutting an XYZ pyramid and standing up a tile server for it would be all
+// cost and no benefit. The corners are read from the sidecar JSON the build
+// script emits, so regenerating the PNG at a different size or extent can
+// never leave the app pointing at stale coordinates.
+const HILLSHADE_META_URL = "data/hillshade_homestead.json";
+const HILLSHADE_LAYER_ID = "hillshade-relief";
+const HILLSHADE_SOURCE_ID = "hillshade";
+
+let hillshadeMeta = null;
+
+async function loadHillshadeMeta() {
+  try {
+    const res = await fetch(HILLSHADE_META_URL);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.json();
+  } catch (err) {
+    // Non-fatal on purpose: the hillshade is a visual enhancement, and a
+    // missing/malformed sidecar should cost the reader the 3D effect, not
+    // the whole map.
+    console.warn("Hillshade overlay unavailable - continuing without it.", err);
+    return null;
+  }
+}
+
+// Adds the image source + raster layer to `map`, positioned beneath
+// `beforeLayerId` so every thematic fill still paints on top of it.
+function addHillshadeLayer(map, { layerId, sourceId, beforeLayerId }) {
+  if (!hillshadeMeta) return;
+  map.addSource(sourceId, {
+    type: "image",
+    url: hillshadeMeta.image,
+    coordinates: hillshadeMeta.coordinates
+  });
+  map.addLayer(
+    {
+      id: layerId,
+      type: "raster",
+      source: sourceId,
+      layout: { visibility: "none" },
+      paint: {
+        "raster-opacity": 1,
+        // Off by default: MapLibre's raster fade cross-dissolves through
+        // transparent when an image source first paints, which reads as a
+        // flash on a layer that is toggled per chapter.
+        "raster-fade-duration": 0,
+        // Nudged up because the choropleth on top eats most of the tonal
+        // range - without this the relief survives as a faint smudge rather
+        // than as shape.
+        "raster-contrast": 0.15
+      }
+    },
+    beforeLayerId
+  );
+}
 
 // --- Shared contour / road line symbology -------------------------------
 // Both the scroll-driven story map and the Explorer's second map instance
@@ -304,12 +374,28 @@ function updateThematicLayerStyle(map, chapter) {
 
   const mode = chapter && chapter.reducedOpacity ? "reduced" : "default";
 
+  // Ceiling on the thematic fill opacity wherever the hillshade is switched
+  // on. The relief sits UNDERNEATH these fills, so it only reaches the reader
+  // through whatever transparency they leave it: elevation's normal 0.75
+  // would pass a quarter of the shading - enough to tint the map, not enough
+  // to read as shape. 0.6 leaves 40%, which is where the terrain starts to
+  // look three-dimensional while each class still matches its legend chip.
+  const cap = chapter && chapter.layers && chapter.layers.hillshade ? 0.6 : 1;
+
   map.setPaintProperty("vegetation-fill", "fill-color", VEGETATION_RAMP_NORMAL);
-  map.setPaintProperty("vegetation-fill", "fill-opacity", mode === "reduced" ? 0.5 : 0.6);
+  map.setPaintProperty(
+    "vegetation-fill",
+    "fill-opacity",
+    Math.min(mode === "reduced" ? 0.5 : 0.6, cap)
+  );
   applyLegendSwatchColors("vegetation", extractRampColors(VEGETATION_RAMP_NORMAL));
 
   map.setPaintProperty("elevation-fill", "fill-color", ELEVATION_RAMP_NORMAL);
-  map.setPaintProperty("elevation-fill", "fill-opacity", mode === "reduced" ? 0.5 : 0.75);
+  map.setPaintProperty(
+    "elevation-fill",
+    "fill-opacity",
+    Math.min(mode === "reduced" ? 0.5 : 0.75, cap)
+  );
   applyLegendSwatchColors("elevation", extractRampColors(ELEVATION_RAMP_NORMAL));
 
   // One fade factor for the whole road stack, so the white halos dim in step
@@ -1008,6 +1094,27 @@ const SECTION_NAV_OVERRIDES = {
   orient: "welcome"
 };
 
+// The Block Explorer gets a pill of its own in the top row, even though it
+// is not a narrative section and owns no chapters. It's the one interactive
+// tool in the story ("go look at YOUR block"), and a reader who wants it
+// should not have to remember which narrative section it happens to sit
+// inside and scroll for it.
+//
+// It is deliberately a section pill with NO sub-row: there is nothing to
+// list underneath it, and showToolbarSection() hides every sub-row whose
+// data-section doesn't match, so passing this id through the normal path
+// collapses the second tier automatically - no special case needed there.
+const EXPLORER_NAV_ID = "explorer";
+const EXPLORER_NAV_LABEL = "Explore Your Block";
+const EXPLORER_SECTION_EL_ID = "block-explorer";
+
+// Which narrative section the Explorer pill is slotted in after. The
+// Explorer section itself is injected into the DOM directly after
+// "section1-transition" (see renderChapters()), so putting its pill after
+// the pill for that chapter's section keeps the nav in the same order as
+// the page. Falls back to appending at the end if that section ever goes.
+const EXPLORER_NAV_AFTER_SECTION = "section1";
+
 // Shows the sub-row for one section (hides all others) and marks its
 // section pill active - used both on section-pill click and, via
 // updateToolbar(), as the reader scrolls between sections.
@@ -1029,16 +1136,31 @@ function renderToolbar(chapters) {
 
   const { order, groups } = groupChaptersBySection(chapters);
 
+  // Build the top row from the narrative sections, then splice the Block
+  // Explorer's standalone pill in at the position matching where its
+  // section actually sits in the page.
+  const pillIds = order.slice();
+  const afterIdx = pillIds.indexOf(EXPLORER_NAV_AFTER_SECTION);
+  pillIds.splice(afterIdx === -1 ? pillIds.length : afterIdx + 1, 0, EXPLORER_NAV_ID);
+
   const sectionsRow = document.createElement("div");
   sectionsRow.className = "toolbar-sections";
-  sectionsRow.innerHTML = order
-    .map(
-      (sectionId) => `
-        <button type="button" class="toolbar-section-item" data-section="${sectionId}">
-          ${SECTION_LABELS[sectionId] || sectionId}
+  sectionsRow.innerHTML = pillIds
+    .map((sectionId) => {
+      const isExplorer = sectionId === EXPLORER_NAV_ID;
+      const label = isExplorer ? EXPLORER_NAV_LABEL : SECTION_LABELS[sectionId] || sectionId;
+      // The extra class is styling only (a subtle "this one is a tool, not a
+      // chapter group" treatment) - the click handler below finds it by
+      // data-section like every other pill.
+      const cls = isExplorer
+        ? "toolbar-section-item toolbar-section-standalone"
+        : "toolbar-section-item";
+      return `
+        <button type="button" class="${cls}" data-section="${sectionId}">
+          ${label}
         </button>
-      `
-    )
+      `;
+    })
     .join("");
   toolbar.appendChild(sectionsRow);
 
@@ -1066,6 +1188,10 @@ function renderToolbar(chapters) {
     btn.addEventListener("click", () => {
       const sectionId = btn.dataset.section;
       showToolbarSection(sectionId, toolbar);
+      if (sectionId === EXPLORER_NAV_ID) {
+        scrollToChapter(EXPLORER_SECTION_EL_ID);
+        return;
+      }
       const firstChapter = groups[sectionId] && groups[sectionId][0];
       const targetId = SECTION_NAV_OVERRIDES[sectionId] || (firstChapter && firstChapter.id);
       if (targetId) scrollToChapter(targetId);
@@ -1394,7 +1520,11 @@ function renderLegendShell(legendConfig) {
 function updateLegend(activeLayers) {
   const legend = document.getElementById("legend");
   const reopenBtn = document.getElementById("legend-reopen");
-  const anyActive = Object.values(activeLayers).some(Boolean);
+  // Count only keys that actually have a legend section. Some chapter layer
+  // keys ("wind", "hillshade") drive map state but render nothing in the
+  // legend - counting those would open an empty legend box on a chapter
+  // whose only active layer has nothing to explain.
+  const anyActive = Object.keys(LEGEND_CONFIG || {}).some((key) => activeLayers[key]);
 
   legend.classList.toggle("legend-hidden", !anyActive);
 
@@ -2170,6 +2300,12 @@ function initExplorerObserver() {
     (entries) => {
       entries.forEach((entry) => {
         document.body.classList.toggle("explorer-active", entry.isIntersecting);
+        // Light up the Explorer's own nav pill while the reader is in it.
+        // updateToolbar() can't do this - it's driven by the .chapter
+        // observer and the Explorer isn't a chapter - and scrolling back
+        // out hands control straight back, because the next chapter to
+        // cross that observer's threshold calls updateToolbar() itself.
+        if (entry.isIntersecting) showToolbarSection(EXPLORER_NAV_ID);
       });
     },
     { threshold: 0.35 }
@@ -2302,6 +2438,14 @@ function initMap(chapters, layerBounds) {
       source: "homestead",
       layout: { visibility: "none" },
       paint: { "fill-color": "#000000", "fill-opacity": 0.08 }
+    });
+
+    // Hillshade relief, added before every thematic fill so it sits at the
+    // bottom of the stack (no beforeId needed - nothing above it exists yet).
+    // See addHillshadeLayer() for why it's an image source.
+    addHillshadeLayer(map, {
+      layerId: HILLSHADE_LAYER_ID,
+      sourceId: HILLSHADE_SOURCE_ID
     });
 
     // Terrain / elevation - real USGS 3DEP 1m LIDAR DEM (see topo_work/),
@@ -2668,10 +2812,16 @@ function setupNavOffset(headerEl, toolbarEl) {
 
 // --- Bootstrap --------------------------------------------------------
 async function bootstrap() {
-  const [config, layerBounds] = await Promise.all([
+  const [config, layerBounds, hillshade] = await Promise.all([
     fetch("data/chapters.json").then((r) => r.json()),
-    loadLayerBounds()
+    loadLayerBounds(),
+    loadHillshadeMeta()
   ]);
+
+  // addHillshadeLayer() reads this straight off the module scope rather than
+  // taking it as an argument, so it only has to be assigned before initMap()
+  // runs (below) - not before renderChapters().
+  hillshadeMeta = hillshade;
 
   applySettings(config.settings);
   applyTheme(config.theme);

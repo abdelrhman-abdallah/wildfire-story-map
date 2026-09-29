@@ -1,0 +1,24 @@
+{
+  "image": "data/hillshade_homestead.png",
+  "coordinates": [
+    [
+      -122.56181085,
+      37.90261887
+    ],
+    [
+      -122.53259311,
+      37.90261887
+    ],
+    [
+      -122.53259311,
+      37.8885926
+    ],
+    [
+      -122.56181085,
+      37.8885926
+    ]
+  ],
+  "width": 2048,
+  "height": 1246,
+  "source": "USGS 3DEP 1 m LIDAR DEM, GDAL hillshade, clipped to CSA 14"
+}
