@@ -37,24 +37,13 @@
         }
       ]
     },
-    "vegetation": {
-      "title": "Vegetation Density (NDVI)",
+    "contours": {
+      "title": "Elevation Contours",
       "items": [
         {
-          "label": "Sparse (NDVI 0.41–0.55) — 78.6 ac",
-          "color": "#d9f0a3"
-        },
-        {
-          "label": "Moderate (NDVI 0.55–0.70) — 102.3 ac",
-          "color": "#78c679"
-        },
-        {
-          "label": "Dense (NDVI 0.70–0.82) — 106.9 ac",
-          "color": "#31a354"
-        },
-        {
-          "label": "Very dense (NDVI ≥ 0.82) — 97.8 ac",
-          "color": "#006837"
+          "label": "20 ft interval — labeled every 40 ft",
+          "color": "#8a6d3b",
+          "swatch": "line-solid"
         }
       ]
     },
@@ -63,40 +52,40 @@
       "items": [
         {
           "label": "9–58 ft — 35.0 ac",
-          "color": "#c9e2b6"
+          "color": "#F0F0F0"
         },
         {
           "label": "58–172 ft — 109.7 ac",
-          "color": "#a8d18c"
+          "color": "#D9D9D9"
         },
         {
           "label": "172–306 ft — 142.7 ac",
-          "color": "#cfe0a0"
+          "color": "#BDBDBD"
         },
         {
           "label": "306–444 ft — 109.9 ac",
-          "color": "#e8dfa8"
+          "color": "#969696"
         },
         {
           "label": "444–578 ft — 52.3 ac",
-          "color": "#dfc389"
+          "color": "#737373"
         },
         {
           "label": "578–692 ft — 14.2 ac",
-          "color": "#cba173"
+          "color": "#525252"
         },
         {
           "label": "692–782 ft — 4.3 ac",
-          "color": "#b8835f"
+          "color": "#353535"
         },
         {
           "label": "782–822 ft — 0.9 ac",
-          "color": "#e8ddd3"
+          "color": "#1A1A1A"
         }
       ]
     },
     "bivariate": {
-      "title": "Fuel Load × Elevation",
+      "title": "Vegetation × Elevation",
       "symbology": "matrix",
       "matrix": {
         "rows": [
@@ -114,16 +103,31 @@
           "edges": [12, 156, 265, 393, 822],
           "unit": "ft"
         },
-        "note": "Red = fuel load, blue = elevation, dark plum = both high. Elevation classes are quartiles of the vegetated area (≈97 ac each); vegetation classes use the same NDVI breaks as the Vegetation Density layer. 385.6 ac of vegetated ground."
+        "note": "Red = fuel load, blue = elevation, dark plum = both high."
       }
     },
-    "contours": {
-      "title": "Elevation Contours",
+    "vegetation": {
+      "title": "Vegetation Density (NDVI)",
       "items": [
         {
-          "label": "20 ft interval — labeled every 40 ft",
-          "color": "#8a6d3b",
-          "swatch": "line-solid"
+          "label": "Sparse — 78.6 ac",
+          "color": "#d9f0a3",
+          "zone":"(NDVI 0.41–0.55)"
+        },
+        {
+          "label": "Moderate — 102.3 ac",
+          "color": "#78c679",
+          "zone": "(NDVI 0.55–0.70)"
+        },
+        {
+          "label": "Dense — 106.9 ac",
+          "color": "#31a354",
+          "zone": "(NDVI 0.70–0.82)"
+        },
+        {
+          "label": "Very dense — 97.8 ac",
+          "color": "#006837",
+          "zone": "(NDVI ≥ 0.82)"
         }
       ]
     },
@@ -131,12 +135,12 @@
       "title": "Road Network",
       "items": [
         {
-          "label": "Residential / through streets (solid)",
+          "label": "Residential / through streets",
           "color": "#2b2f33",
           "swatch": "line-solid"
         },
         {
-          "label": "Service drives, footpaths & trails (dotted)",
+          "label": "Service drives, footpaths & trails",
           "color": "#2b2f33",
           "swatch": "line-dashed"
         }
@@ -525,7 +529,8 @@
         "marin": false,
         "homesteadHighlight": true,
         "vegetation": false,
-        "elevation": false
+        "elevation": false,
+        "streets": true
       },
       "fitToLayer": "homestead"
     },

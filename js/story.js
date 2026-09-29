@@ -2023,6 +2023,7 @@ function initExplorerMap() {
 // each layer to the selected block exactly. All start hidden and match
 // nothing; selectExplorerBlock() sets the filter and switches them on.
 function addExplorerThematicLayers(map) {
+
   map.addSource("explorer-elevation", { type: "geojson", data: "data/block_elevation.geojson" });
   map.addLayer({
     id: "explorer-elevation-fill",
@@ -2033,17 +2034,17 @@ function addExplorerThematicLayers(map) {
       "fill-color": [
         "match",
         ["get", "elev_class"],
-        1, "#c9e2b6",
-        2, "#a8d18c",
-        3, "#cfe0a0",
-        4, "#e8dfa8",
-        5, "#dfc389",
-        6, "#cba173",
-        7, "#b8835f",
-        8, "#e8ddd3",
+          1, "#F0F0F0",
+          2, "#D9D9D9", 
+          3, "#BDBDBD", 
+          4, "#969696",
+          5, "#737373", 
+          6, "#525252", 
+          7, "#353535", 
+          8, "#1A1A1A",
         "#cccccc"
       ],
-      "fill-opacity": 0.75
+      "fill-opacity": 1
     }
   });
 
@@ -2066,7 +2067,7 @@ function addExplorerThematicLayers(map) {
         4, "#006837",
         "#cccccc"
       ],
-      "fill-opacity": 0.6
+      "fill-opacity": 0.7
     }
   });
 
@@ -2303,6 +2304,39 @@ function initMap(chapters, layerBounds) {
       paint: { "fill-color": "#000000", "fill-opacity": 0.08 }
     });
 
+    // Terrain / elevation - real USGS 3DEP 1m LIDAR DEM (see topo_work/),
+    // GDAL-polygonized (rasterio.features.shapes) into 8 hypsometric-tint
+    // classes. Same colormap and class breaks as the reference cartographic
+    // PNG (topo_work/homestead_topo_map.png / 09_render_map.py's "hyps"
+    // colormap), so the vector map and the static graphic read as one
+    // consistent symbology.
+    map.addSource("elevation", {
+      type: "geojson",
+      data: "data/homestead_elevation.geojson"
+    });
+    map.addLayer({
+      id: "elevation-fill",
+      type: "fill",
+      source: "elevation",
+      layout: { visibility: "none" },
+      paint: {
+        "fill-color": [
+          "match",
+          ["get", "elev_class"],
+            1, "#F0F0F0",
+            2, "#D9D9D9", 
+            3, "#BDBDBD", 
+            4, "#969696",
+            5, "#737373", 
+            6, "#525252", 
+            7, "#353535", 
+            8, "#1A1A1A",
+          "#cccccc"
+        ],
+        "fill-opacity": 1
+      }
+    });
+
     // Vegetation density (NDVI) - real Sentinel-2-derived classification for
     // this AOI (see ndvi_work/06_ndvi.py), not sample/dummy data. Four
     // classes on a light-to-dark green ramp, used as a visual proxy for fuel
@@ -2326,40 +2360,7 @@ function initMap(chapters, layerBounds) {
           4, "#006837",
           "#cccccc"
         ],
-        "fill-opacity": 0.6
-      }
-    });
-
-    // Terrain / elevation - real USGS 3DEP 1m LIDAR DEM (see topo_work/),
-    // GDAL-polygonized (rasterio.features.shapes) into 8 hypsometric-tint
-    // classes. Same colormap and class breaks as the reference cartographic
-    // PNG (topo_work/homestead_topo_map.png / 09_render_map.py's "hyps"
-    // colormap), so the vector map and the static graphic read as one
-    // consistent symbology.
-    map.addSource("elevation", {
-      type: "geojson",
-      data: "data/homestead_elevation.geojson"
-    });
-    map.addLayer({
-      id: "elevation-fill",
-      type: "fill",
-      source: "elevation",
-      layout: { visibility: "none" },
-      paint: {
-        "fill-color": [
-          "match",
-          ["get", "elev_class"],
-          1, "#c9e2b6",
-          2, "#a8d18c",
-          3, "#cfe0a0",
-          4, "#e8dfa8",
-          5, "#dfc389",
-          6, "#cba173",
-          7, "#b8835f",
-          8, "#e8ddd3",
-          "#cccccc"
-        ],
-        "fill-opacity": 0.75
+        "fill-opacity": 0.7
       }
     });
 
