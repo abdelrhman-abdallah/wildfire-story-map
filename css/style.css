@@ -346,6 +346,33 @@ body.media-pos-none #media-sidecar {
   margin-top: 0;
 }
 
+/* Video embeds can't be sized like the images above: an <iframe> has no
+   intrinsic aspect ratio, so width/height:auto collapses it to the HTML
+   default 300x150 box. It gets an explicit preferred size plus an enforced
+   16:9 ratio instead - matching .video-pending, so a slot that was a
+   placeholder doesn't change size once the real URL lands.
+
+   Which dimension binds depends on the panel's shape, and that flips between
+   mediaPosition values and viewport sizes: "full" is wide-and-short (height
+   binds), "left"/"right" on a tall window is narrow-and-tall (width binds).
+   Pinning EITHER dimension to 100% breaks the other case - a browser clamps
+   the second dimension against its max-* without recomputing the first from
+   the ratio, so the embed stretches. Leaving both auto and letting the two
+   max-* constraints do the work is the only form that fits correctly either
+   way (verified at both panel shapes). */
+#media-sidecar .media-carousel-item iframe {
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 100%;
+  aspect-ratio: 16 / 9;
+  flex: 0 1 auto;
+  border: 0;
+  border-radius: 8px;
+  box-shadow: 0 10px 34px rgba(0, 0, 0, 0.22);
+  margin-top: 0;
+}
+
 /* Caption sits in the padded strip BELOW the image now, on the panel's own
    light background - the old dark gradient was there to stay readable when
    the image ran edge-to-edge underneath it, which it no longer does. */
@@ -568,6 +595,66 @@ body.media-pos-none #media-sidecar {
 .media-carousel-item iframe {
   margin-top: 0;
   border-radius: 0;
+}
+
+/* A video slot the client has reserved but not yet supplied a URL for.
+   Sized to the same 16:9 box a YouTube embed will occupy, so dropping the
+   real URL in later doesn't reflow anything around it. */
+.video-pending {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  aspect-ratio: 16 / 9;
+  padding: 1.5rem;
+  box-sizing: border-box;
+  text-align: center;
+  background:
+    repeating-linear-gradient(
+      -45deg,
+      rgba(44, 62, 145, 0.05) 0 12px,
+      rgba(44, 62, 145, 0.1) 12px 24px
+    ),
+    #f3f1ec;
+  border: 1px dashed rgba(44, 62, 145, 0.45);
+}
+
+.video-pending-badge {
+  font-family: var(--font-heading);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: #fff;
+  background: var(--color-accent);
+  border-radius: 999px;
+  padding: 0.3rem 0.85rem;
+}
+
+.video-pending p {
+  margin: 0;
+  max-width: 34ch;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  color: #3a3a3a;
+}
+
+.video-pending p.video-pending-note {
+  font-size: 0.8rem;
+  color: #6b6b6b;
+}
+
+/* Height-driven, exactly like the real embed above, so a reserved slot and
+   the YouTube iframe that eventually replaces it occupy the same box. */
+#media-sidecar .video-pending {
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 100%;
+  flex: 0 1 auto;
+  border-radius: 8px;
+  box-shadow: 0 10px 34px rgba(0, 0, 0, 0.22);
 }
 
 .media-carousel-arrow {
@@ -967,6 +1054,15 @@ body.image-modal-open {
 
 .toolbar-subrow.active {
   display: flex;
+}
+
+/* Still laid out, just not painted or clickable. Used when the Block Explorer
+   pill is active: it has no sub-row of its own, and actually removing the
+   outgoing one changes #toolbar's height, which moves the whole page under
+   the reader - see showToolbarSection(). */
+.toolbar-subrow.active.reserved {
+  visibility: hidden;
+  pointer-events: none;
 }
 
 .toolbar-section-item {
@@ -1485,6 +1581,12 @@ body.explorer-active .legend-reopen {
   overflow: hidden;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
   background: #e9e9e9;
+  /* The "Explore Your Block" pill scrolls to this element rather than to the
+     top of the section, so the map itself lands in view. --nav-offset covers
+     the header + toolbar heights but NOT the 2.5rem the sticky toolbar is
+     offset from the top (see #toolbar), so that has to be added back or the
+     map's top edge tucks under the bar. The last 1rem is breathing room. */
+  scroll-margin-top: calc(var(--nav-offset, 5.5rem) + 2.5rem + 1rem);
 }
 
 #explorer-map {

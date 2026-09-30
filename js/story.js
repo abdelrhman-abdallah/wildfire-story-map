@@ -825,10 +825,15 @@ function normalizeMedia(chapter) {
 
 function renderMediaItemInner(item) {
   if (item.type === "video") {
-    if (item.youtubeUrl) {
-      const ytId = parseYouTubeId(item.youtubeUrl);
+    // `youtubeUrl` is the documented field, but a URL pasted into `src` (the
+    // image field) is an easy mistake to make when filling in a reserved video
+    // slot - and it used to fail silently as a "coming soon" placeholder. Accept
+    // either, so long as a video ID can actually be parsed out of it.
+    const ytUrl = item.youtubeUrl || (parseYouTubeId(item.src) ? item.src : null);
+    if (ytUrl) {
+      const ytId = parseYouTubeId(ytUrl);
       if (!ytId) {
-        return `<p><em>Could not parse a video ID from "${item.youtubeUrl}".</em></p>`;
+        return `<p><em>Could not parse a video ID from "${ytUrl}".</em></p>`;
       }
       return `
         <iframe
@@ -849,7 +854,16 @@ function renderMediaItemInner(item) {
         </video>
       `;
     }
-    return "";
+    // A video slot the client has reserved but not yet supplied a URL for.
+    // Renders a labelled placeholder so the carousel keeps its shape and the
+    // slot is obvious in review; drop in a youtubeUrl to make it live.
+    return `
+      <div class="video-pending">
+        <span class="video-pending-badge">Video coming soon</span>
+        <p>${item.alt || "Interview video"}</p>
+        ${item.pendingNote ? `<p class="video-pending-note">${item.pendingNote}</p>` : ""}
+      </div>
+    `;
   }
   return `<img src="${item.src}" alt="${item.alt || ""}" loading="lazy" />`;
 }
@@ -1202,13 +1216,13 @@ function renderChapters(chapters) {
   });
 
   // Block Explorer (see renderExplorerSection() below) isn't a narrative
-  // chapter - it's an interactive detour dropped in right after "Where Do
-  // We Have the Greatest Ability to Intervene?" (section1-transition),
-  // the natural place for "here's a tool to go look at your own block"
-  // before the story moves on to how homes ignite. It's a plain in-flow
-  // section, not a `.chapter`, so it never enters the shared-map
-  // IntersectionObserver/docking system - see initExplorerObserver().
-  const anchorChapter = document.getElementById("section1-transition");
+  // chapter - it's an interactive detour dropped in right after "Analyze My
+  // Own Block" (section1-state6-block), the chapter that hands the reader off
+  // to it explicitly, and so it lands at the end of Section 1, just before the
+  // story moves on to how homes ignite. It's a plain in-flow section, not a
+  // `.chapter`, so it never enters the shared-map IntersectionObserver/docking
+  // system - see initExplorerObserver().
+  const anchorChapter = document.getElementById("section1-state6-block");
   const explorerSection = renderExplorerSection();
   if (anchorChapter) {
     anchorChapter.insertAdjacentElement("afterend", explorerSection);
@@ -1234,6 +1248,7 @@ function renderChapters(chapters) {
 // automatically land in the right group.
 const SECTION_LABELS = {
   orient: "Get Oriented",
+  resilience: "Not Starting From Scratch",
   section1: "What Wildfire Means Here",
   section2: "How Homes Ignite",
   reduce: "Reduce Your Risk",
@@ -1243,6 +1258,7 @@ const SECTION_LABELS = {
 };
 
 function sectionIdFor(chapter) {
+  if (chapter.id.startsWith("resilience")) return "resilience";
   if (chapter.id.startsWith("section1")) return "section1";
   if (chapter.id.startsWith("section2")) return "section2";
   // Sections 3 (two strategies) and 4 (defensible-space zones) are two
@@ -1314,14 +1330,35 @@ const EXPLORER_NAV_AFTER_SECTION = "section1";
 // Shows the sub-row for one section (hides all others) and marks its
 // section pill active - used both on section-pill click and, via
 // updateToolbar(), as the reader scrolls between sections.
+//
+// The Explorer pill owns no chapters and so matches no sub-row. Letting the
+// second tier collapse for it used to shift every following element up by the
+// sub-row's height, and that shift fed straight back into the observer that
+// caused it: the Explorer moved far enough to re-cross its own intersection
+// threshold, which switched the sub-row back on, which moved it back down -
+// an oscillation the reader saw as the page flickering. So the outgoing
+// sub-row is kept in flow and merely made invisible, which reserves exactly
+// the right height (no guessing, no wrapping edge cases) and breaks the loop.
 function showToolbarSection(sectionId, toolbarEl) {
   const bar = toolbarEl || document.getElementById("toolbar");
   if (!bar) return;
   bar.querySelectorAll(".toolbar-section-item").forEach((btn) => {
     btn.classList.toggle("active", btn.dataset.section === sectionId);
   });
-  bar.querySelectorAll(".toolbar-subrow").forEach((row) => {
-    row.classList.toggle("active", row.dataset.section === sectionId);
+
+  const rows = [...bar.querySelectorAll(".toolbar-subrow")];
+  const match = rows.find((row) => row.dataset.section === sectionId);
+
+  if (!match) {
+    // Nothing to show (the Explorer): hold the current row's height open.
+    const current = rows.find((row) => row.classList.contains("active"));
+    if (current) current.classList.add("reserved");
+    return;
+  }
+
+  rows.forEach((row) => {
+    row.classList.toggle("active", row === match);
+    row.classList.remove("reserved");
   });
 }
 
@@ -1385,7 +1422,14 @@ function renderToolbar(chapters) {
       const sectionId = btn.dataset.section;
       showToolbarSection(sectionId, toolbar);
       if (sectionId === EXPLORER_NAV_ID) {
-        scrollToChapter(EXPLORER_SECTION_EL_ID);
+        // Aim at the map, not the top of the section. The Explorer's heading
+        // and intro run ~500px tall, so landing at the section's start leaves
+        // the actual interactive map below the fold - the one thing the pill
+        // promises. .explorer-map-wrap carries a scroll-margin-top of
+        // --nav-offset so it clears the sticky header/toolbar.
+        const section = document.getElementById(EXPLORER_SECTION_EL_ID);
+        const mapWrap = section && section.querySelector(".explorer-map-wrap");
+        (mapWrap || section).scrollIntoView({ behavior: "smooth" });
         return;
       }
       const firstChapter = groups[sectionId] && groups[sectionId][0];
