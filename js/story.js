@@ -542,38 +542,40 @@ function applyLegendSwatchColors(layerKey, colors) {
   });
 }
 
-// Opacity FLOOR applied to the thematic fills on any chapter that also shows
-// the shade overlay.
+// Fill opacity is INDEPENDENT of the relief, and that is the real dividend of
+// moving the shade on top.
 //
-// This started life as a 0.6 CEILING, back when the hillshade was drawn
-// underneath the fills and the only way relief could reach the reader was
-// through their transparency. That trade is gone: the shade now composites on
-// top (see the HILLSHADE_* block), so it reaches the reader at full strength
-// regardless of what the fill does, and every point of fill transparency now
-// buys nothing except a weaker class colour diluted by the basemap.
+// Before, the hillshade was underneath, so the only route relief had to the
+// reader was the fills' transparency - which is why this used to be a 0.6
+// CEILING. Colour and terrain were in direct competition and you had to give
+// up some of one to get the other.
 //
-// So the relationship inverts - shaded chapters want MORE opacity, not less.
-// Just short of 1.0 rather than exactly 1.0: the sliver of Positron underneath
-// keeps place labels and the street grid faintly legible through the fill,
-// which is what lets a reader locate their own block.
-const SHADED_FILL_OPACITY_FLOOR = 0.92;
-
+// A first pass at v18 inverted that into a 0.92 FLOOR, on the reasoning that
+// since `result = fill x (1 - a)` preserves relief contrast at any fill
+// opacity, transparency now buys nothing but a diluted class colour. The
+// premise is right; the conclusion was not. Transparency was never only a
+// carrier for the hillshade - it also lets Positron's street grid and place
+// labels read through, which is how a reader finds their own block, and it
+// keeps the dark end of each ramp off the floor of the tone range, where a 50%
+// multiply has nothing left to darken. At 0.92 the "very dense" green went
+// nearly black under shadow and the relief stopped reading inside it.
+//
+// So: no floor, no ceiling. The shade handles relief, these defaults handle
+// legibility, and the two no longer trade against each other.
 function updateThematicLayerStyle(map, chapter) {
   if (!map || !mapLayersReady) return;
 
+  // "reduced" is set on one chapter, "Why Homestead Is Different", which stacks
+  // vegetation, elevation, streets and shade at once and needs none of them to
+  // dominate. Note its softer look comes as much from the greyscale elevation
+  // wash underneath the vegetation as from the opacity itself - a chapter
+  // without that layer will read lighter and more pastel at the same number,
+  // not darker and greyer, because reducing opacity blends toward the near-
+  // white basemap rather than toward grey.
   const mode = chapter && chapter.reducedOpacity ? "reduced" : "default";
-  const shaded = Boolean(chapter && chapter.layers && chapter.layers.hillshade);
-
-  // reducedOpacity WINS over the floor. It is set on exactly one chapter, "Why
-  // Homestead Is Different", whose whole job is showing vegetation, elevation,
-  // streets and shade at once with none of them dominating. Enforcing the floor
-  // there would make vegetation - which is added later in the stack - cover
-  // elevation wholesale, leaving elevation visible only inside the NDVI < 0.41
-  // holes. That reads as a rendering bug rather than as a deliberate overlay.
-  const floor = shaded && mode !== "reduced" ? SHADED_FILL_OPACITY_FLOOR : 0;
 
   map.setPaintProperty("vegetation-fill", "fill-color", VEGETATION_RAMP_NORMAL);
-  const vegOpacity = Math.max(mode === "reduced" ? 0.5 : 0.6, floor);
+  const vegOpacity = mode === "reduced" ? 0.5 : 0.6;
   map.setPaintProperty("vegetation-fill", "fill-opacity", vegOpacity);
   // The raster overlay replaces the vector fill wherever it loaded (see
   // resolveVegetationLayerIds), so it takes the same opacity - one dial, so the
@@ -588,7 +590,7 @@ function updateThematicLayerStyle(map, chapter) {
   map.setPaintProperty(
     "elevation-fill",
     "fill-opacity",
-    Math.max(mode === "reduced" ? 0.5 : 0.75, floor)
+    mode === "reduced" ? 0.5 : 0.75
   );
   applyLegendSwatchColors("elevation", extractRampColors(ELEVATION_RAMP_NORMAL));
 
