@@ -2,23 +2,51 @@
   "image": "data/hillshade_homestead.png",
   "coordinates": [
     [
-      -122.56181085,
-      37.90261887
+      -122.5625421,
+      37.90319839
     ],
     [
-      -122.53259311,
-      37.90261887
+      -122.5318653,
+      37.90319839
     ],
     [
-      -122.53259311,
-      37.8885926
+      -122.5318653,
+      37.88801222
     ],
     [
-      -122.56181085,
-      37.8885926
+      -122.5625421,
+      37.88801222
     ]
   ],
   "width": 2048,
-  "height": 1246,
-  "source": "USGS 3DEP 1 m LIDAR DEM, GDAL hillshade, clipped to CSA 14"
+  "height": 1285,
+  "encoding": "shadow-highlight-alpha",
+  "shadow_strength": 0.5,
+  "highlight_strength": 0.1,
+  "neutral": 0.68415,
+  "z_exaggeration": 2.0,
+  "smooth_sigma_m": 2.0,
+  "lamps": [
+    {
+      "azimuth": 315.0,
+      "altitude": 45.0,
+      "weight": 0.55
+    },
+    {
+      "azimuth": 270.0,
+      "altitude": 60.0,
+      "weight": 0.17
+    },
+    {
+      "azimuth": 0.0,
+      "altitude": 60.0,
+      "weight": 0.17
+    },
+    {
+      "azimuth": 225.0,
+      "altitude": 60.0,
+      "weight": 0.11
+    }
+  ],
+  "source": "USGS 3DEP 1 m LIDAR DEM (DEM_1m_26910.tif), Horn 1981 slope/aspect, 4-lamp multidirectional shade, clipped to CSA 14"
 }

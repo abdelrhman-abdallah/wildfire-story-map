@@ -55,16 +55,51 @@ const LEGEND_LAYER_IDS = {
   // other key here. Chapters still switch it on/off through this table (see
   // setupScrollTriggers), but it gets no legend section: it carries no
   // classes, no values and nothing to decode - it's a shading treatment
-  // applied to the layer above it, not a dataset a reader looks up.
+  // applied to the layers below it, not a dataset a reader looks up.
   hillshade: ["hillshade-relief"]
 };
 
-// --- Hillshade relief overlay -------------------------------------------
-// A grayscale hillshade of the USGS 3DEP 1 m LIDAR DEM, clipped to the CSA 14
-// boundary and warped to Web Mercator by topo_work/10_hillshade_overlay.py.
-// It is drawn UNDERNEATH the elevation / vegetation choropleths, which are
-// translucent, so the relief shows through them and the flat 2D fill reads as
-// terrain - the standard "hypsometric tint over hillshade" recipe.
+// --- Terrain shade overlay ("Multiply" without a blend mode) -------------
+// Built by topo_work/11_hillshade_shade.py from the USGS 3DEP 1 m LIDAR DEM,
+// clipped to CSA 14 and warped to Web Mercator.
+//
+// This is NOT a picture of a hillshade. It is a picture of the shading
+// OPERATOR, and the difference is the whole reason the map now reads as 3D.
+//
+// The first version of this overlay was a grey hillshade drawn UNDERNEATH the
+// translucent choropleths. That composite is `f*C + (1-f)*H` - a linear
+// average - so every class colour got pulled toward mid-grey in proportion to
+// how much relief you let through. You could have the colour or the terrain,
+// never both, which is exactly the "washed out" gap against the ArcGIS Pro
+// reference render (NDVI over hillshade, Layer Blend: Multiply, Transparency
+// 50%).
+//
+// ArcGIS Multiply at transparency (1-s) is `C * (1 - s + s*H)`: it darkens by
+// relief and never desaturates. MapLibre GL v4 has no blend modes - but it
+// does not need them, because Multiply is exactly reproducible with ordinary
+// alpha compositing by moving this layer ON TOP and encoding it as
+// black-with-alpha:
+//
+//     src = black, alpha a  ->  result = C * (1 - a)
+//     with a = s * (1 - H)  ->  result = C * (1 - s + s*H)     <- identical
+//
+// So in the PNG, colour carries only the SIGN of the effect (black = darken,
+// white = lighten) and alpha carries the magnitude. The build script also adds
+// a deliberately weak white/highlight half on the sunlit side: white-over-
+// colour is `C + a*(1-C)`, a linear dodge toward white, i.e. the very
+// desaturation we are escaping, so it is held at ~0.10 against the shadow
+// half's ~0.50 and never gets to dominate.
+//
+// Consequences that are easy to get wrong later:
+//   * The fills underneath must be near-OPAQUE now (see THEMATIC_OPACITY
+//     below). Transparency was the old mechanism for letting relief through;
+//     here transparency only lets the basemap through and dilutes the colour
+//     for nothing.
+//   * Never set raster-contrast / -brightness-* / -saturation on this layer.
+//     Those operate on RGB and leave alpha untouched, so they cannot change
+//     the strength of an alpha-encoded operator - they can only decalibrate
+//     the black/white sign channel. `raster-opacity` scales alpha linearly and
+//     is the one correct strength dial.
 //
 // Delivered as a MapLibre `image` source (one PNG + four corner coordinates)
 // rather than a tiled raster source: it's a single ~2.5 x 1.5 km overlay, so
@@ -75,31 +110,115 @@ const LEGEND_LAYER_IDS = {
 const HILLSHADE_META_URL = "data/hillshade_homestead.json";
 const HILLSHADE_LAYER_ID = "hillshade-relief";
 const HILLSHADE_SOURCE_ID = "hillshade";
+// The contract with topo_work/11_hillshade_shade.py. The superseded
+// 10_hillshade_overlay.py writes a file with the SAME name at the same path
+// but a luminance encoding, and pairing that one with the code below would
+// look plausible while being wrong (a grey image composited on top just fogs
+// the map). Checking the string makes a stale pairing loud.
+const HILLSHADE_ENCODING = "shadow-highlight-alpha";
+
+// --- Vegetation raster overlay ------------------------------------------
+// Built by ndvi_work/11_ndvi_overlay.py onto the SAME Web Mercator grid as the
+// shade overlay above.
+//
+// data/homestead_ndvi_vegetation.geojson is still loaded and still the source
+// of truth (the Block Explorer queries it per-parcel, the legend acreages come
+// from it, and it is the fallback below if this PNG is missing). But its edges
+// trace the 10 m Sentinel-2 grid exactly, which on screen is a staircase on
+// every class boundary - the other half of the "blocky" complaint. This PNG
+// renders the identical classification with edges interpolated from the
+// continuous index instead of quantised to the source grid.
+//
+// Areas below the NDVI 0.41 vegetated break are fully transparent on purpose,
+// so bare relief shows through: on a September dry-season scene roads, roofs
+// and cured grass genuinely are not live fuel, and leaving them open is what
+// makes the shade overlay legible as terrain.
+const VEGETATION_META_URL = "data/vegetation_homestead.json";
+const VEGETATION_LAYER_ID = "vegetation-raster";
+const VEGETATION_SOURCE_ID = "vegetation-image";
+const VEGETATION_ENCODING = "classified-rgba";
 
 let hillshadeMeta = null;
+let vegetationMeta = null;
 
-async function loadHillshadeMeta() {
+// Non-fatal on purpose: both overlays are visual enhancements. A missing or
+// malformed sidecar should cost the reader the 3D effect (or the smooth
+// vegetation edges), not the whole map.
+async function loadOverlayMeta(url, expectedEncoding, label) {
   try {
-    const res = await fetch(HILLSHADE_META_URL);
+    const res = await fetch(url);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return await res.json();
+    const meta = await res.json();
+    if (meta.encoding !== expectedEncoding) {
+      throw new Error(
+        `encoding is "${meta.encoding}", expected "${expectedEncoding}" - the ` +
+          "sidecar was written by a superseded build script"
+      );
+    }
+    if (!Array.isArray(meta.coordinates) || meta.coordinates.length !== 4) {
+      throw new Error("coordinates must be four [lon, lat] pairs (TL, TR, BR, BL)");
+    }
+    return meta;
   } catch (err) {
-    // Non-fatal on purpose: the hillshade is a visual enhancement, and a
-    // missing/malformed sidecar should cost the reader the 3D effect, not
-    // the whole map.
-    console.warn("Hillshade overlay unavailable - continuing without it.", err);
+    console.warn(`${label} unavailable - continuing without it.`, err);
     return null;
   }
 }
 
-// Adds the image source + raster layer to `map`, positioned beneath
-// `beforeLayerId` so every thematic fill still paints on top of it.
-function addHillshadeLayer(map, { layerId, sourceId, beforeLayerId }) {
-  if (!hillshadeMeta) return;
+const loadHillshadeMeta = () =>
+  loadOverlayMeta(HILLSHADE_META_URL, HILLSHADE_ENCODING, "Terrain shade overlay");
+const loadVegetationMeta = () =>
+  loadOverlayMeta(VEGETATION_META_URL, VEGETATION_ENCODING, "Vegetation raster overlay");
+
+// The shade and the colour it shades have to sit on the SAME pixel grid. They
+// are derived from rasters in different CRSs (EPSG:26910 for the DEM,
+// EPSG:32610 for Sentinel-2), so ndvi_work/11_ndvi_overlay.py deliberately
+// reads its target grid out of the shade sidecar instead of computing its own.
+// A 1-2 px misregistration would show up as a coloured fringe along every
+// ridge, so it is worth catching here too rather than trusting the build order.
+function checkOverlayGridsAgree() {
+  if (!hillshadeMeta || !vegetationMeta) return;
+  const same =
+    hillshadeMeta.width === vegetationMeta.width &&
+    hillshadeMeta.height === vegetationMeta.height &&
+    JSON.stringify(hillshadeMeta.coordinates) === JSON.stringify(vegetationMeta.coordinates);
+  if (!same) {
+    console.warn(
+      "Shade and vegetation overlays are on different grids - expect a coloured " +
+        "fringe along relief edges. Re-run topo_work/11_hillshade_shade.py and " +
+        "then ndvi_work/11_ndvi_overlay.py, in that order.",
+      { shade: hillshadeMeta, vegetation: vegetationMeta }
+    );
+  }
+}
+
+// The vegetation ramp is authored in three places that must agree: this file's
+// VEGETATION_RAMP_NORMAL (the vector fallback), chapters.json's legend chips,
+// and the PNG's baked-in pixels. Only the first two can be reconciled at
+// runtime; the third can at least be compared against what the build script
+// recorded it used.
+function checkVegetationRampAgrees(rampFromMap) {
+  if (!vegetationMeta || !Array.isArray(vegetationMeta.ramp)) return;
+  const a = vegetationMeta.ramp.map((c) => String(c).toLowerCase());
+  const b = rampFromMap.map((c) => String(c).toLowerCase());
+  if (a.join() !== b.join()) {
+    console.warn(
+      "Vegetation raster was baked with a different ramp than the legend/vector " +
+        "layer uses - re-run ndvi_work/11_ndvi_overlay.py.",
+      { baked: a, expected: b }
+    );
+  }
+}
+
+// Adds an `image` source + `raster` layer for one of the two overlays above,
+// positioned beneath `beforeLayerId` (or on top of everything so far when that
+// is omitted).
+function addImageOverlayLayer(map, meta, { layerId, sourceId, beforeLayerId, paint }) {
+  if (!meta) return;
   map.addSource(sourceId, {
     type: "image",
-    url: hillshadeMeta.image,
-    coordinates: hillshadeMeta.coordinates
+    url: meta.image,
+    coordinates: meta.coordinates
   });
   map.addLayer(
     {
@@ -113,14 +232,36 @@ function addHillshadeLayer(map, { layerId, sourceId, beforeLayerId }) {
         // transparent when an image source first paints, which reads as a
         // flash on a layer that is toggled per chapter.
         "raster-fade-duration": 0,
-        // Nudged up because the choropleth on top eats most of the tonal
-        // range - without this the relief survives as a faint smudge rather
-        // than as shape.
-        "raster-contrast": 0.15
+        ...paint
       }
     },
     beforeLayerId
   );
+}
+
+// Point the "vegetation" legend key at whichever rendering actually exists.
+//
+// The vector fill is added unconditionally and is the fallback; the raster is
+// added only if its sidecar loaded. Swapping the ID list (rather than, say,
+// adding both and hiding one) means exactly one of the two is ever visible, so
+// they cannot double-darken each other where their edges disagree - and it
+// keeps the manual legend toggle, the per-chapter scroll trigger and this
+// choice all flowing through the same single table.
+//
+// Must run after initMap() has added the layers, since it is asserting which
+// ones exist.
+function resolveVegetationLayerIds(map) {
+  if (map && map.getLayer(VEGETATION_LAYER_ID)) {
+    LEGEND_LAYER_IDS.vegetation = [VEGETATION_LAYER_ID];
+  } else {
+    LEGEND_LAYER_IDS.vegetation = ["vegetation-fill"];
+    if (vegetationMeta) {
+      console.warn(
+        "Vegetation raster sidecar loaded but its layer is missing - falling " +
+          "back to the vector fill."
+      );
+    }
+  }
 }
 
 // --- Shared contour / road line symbology -------------------------------
@@ -220,7 +361,16 @@ function addRoadLayers(map, ids) {
 function setMapLayerVisibility(layerKey, visible) {
   if (!mapInstance || !mapLayersReady) return;
   const ids = LEGEND_LAYER_IDS[layerKey] || [];
-  ids.forEach((id) => mapInstance.setLayoutProperty(id, "visibility", visible ? "visible" : "none"));
+  ids.forEach((id) => {
+    // getLayer guard, matching setExplorerLayerVisibility(). Needed because
+    // the two image overlays are optional: if a sidecar 404s, their addLayer
+    // never ran, and MapLibre v4's setLayoutProperty does NOT throw on a
+    // missing layer - it fires an ErrorEvent and returns. That is worse than
+    // throwing, because the graceful-degradation path then silently spams the
+    // console on every single chapter change.
+    if (!mapInstance.getLayer(id)) return;
+    mapInstance.setLayoutProperty(id, "visibility", visible ? "visible" : "none");
+  });
 }
 
 // Homestead/CSA14 boundary paint states, keyed by whether the current
@@ -243,9 +393,18 @@ function updateHomesteadBoundaryStyle(map, chapter) {
   if (!map || !mapLayersReady) return;
 
   const layers = (chapter && chapter.layers) || {};
-  const stackedThematicCount = ["vegetation", "elevation", "bivariate", "contours", "streets"].filter(
-    (key) => layers[key]
-  ).length;
+  // "hillshade" counts here even though it has no legend section. The point of
+  // this list is "how much is already painted inside the boundary", and the
+  // shade overlay paints the whole polygon - `default`'s 8% black wash on top
+  // of it would just be a second, flatter darkening competing with a real one.
+  const stackedThematicCount = [
+    "vegetation",
+    "elevation",
+    "bivariate",
+    "contours",
+    "streets",
+    "hillshade"
+  ].filter((key) => layers[key]).length;
 
   // The bivariate layer forces lineOnly on its own, without needing a second
   // thematic layer stacked on it. Its whole point is that a reader can match
@@ -267,7 +426,16 @@ function updateHomesteadBoundaryStyle(map, chapter) {
   // color is actually live on the map right now, not a fixed color baked
   // into chapters.json. It's a line-style swatch (see renderLegendShell()),
   // so the color goes on border-top, not background.
-  const swatch = document.querySelector('.legend-section[data-layer="homesteadHighlight"] .legend-swatch');
+  //
+  // Scoped to #legend: the Block Explorer renders its own .legend-section
+  // blocks with the same data-layer attributes, and a document-wide selector
+  // repaints its swatches to match whatever the SCROLL map's current chapter
+  // is doing - which is a different map with a different boundary treatment.
+  // (renderExplorerLegend's own updaters scope to #explorer-legend-sections
+  // for exactly this reason.)
+  const swatch = document.querySelector(
+    '#legend .legend-section[data-layer="homesteadHighlight"] .legend-swatch'
+  );
   if (swatch) swatch.style.borderTopColor = style.lineColor;
 }
 
@@ -362,39 +530,65 @@ function extractRampColors(rampExpression) {
   return colors;
 }
 
+// Scoped to #legend for the same reason as the boundary swatch above - the
+// Explorer's legend uses identical markup and must not be driven by the scroll
+// map's chapter state.
 function applyLegendSwatchColors(layerKey, colors) {
-  const swatches = document.querySelectorAll(`.legend-section[data-layer="${layerKey}"] .legend-swatch`);
+  const swatches = document.querySelectorAll(
+    `#legend .legend-section[data-layer="${layerKey}"] .legend-swatch`
+  );
   swatches.forEach((swatch, i) => {
     if (colors[i]) swatch.style.background = colors[i];
   });
 }
 
+// Opacity FLOOR applied to the thematic fills on any chapter that also shows
+// the shade overlay.
+//
+// This started life as a 0.6 CEILING, back when the hillshade was drawn
+// underneath the fills and the only way relief could reach the reader was
+// through their transparency. That trade is gone: the shade now composites on
+// top (see the HILLSHADE_* block), so it reaches the reader at full strength
+// regardless of what the fill does, and every point of fill transparency now
+// buys nothing except a weaker class colour diluted by the basemap.
+//
+// So the relationship inverts - shaded chapters want MORE opacity, not less.
+// Just short of 1.0 rather than exactly 1.0: the sliver of Positron underneath
+// keeps place labels and the street grid faintly legible through the fill,
+// which is what lets a reader locate their own block.
+const SHADED_FILL_OPACITY_FLOOR = 0.92;
+
 function updateThematicLayerStyle(map, chapter) {
   if (!map || !mapLayersReady) return;
 
   const mode = chapter && chapter.reducedOpacity ? "reduced" : "default";
+  const shaded = Boolean(chapter && chapter.layers && chapter.layers.hillshade);
 
-  // Ceiling on the thematic fill opacity wherever the hillshade is switched
-  // on. The relief sits UNDERNEATH these fills, so it only reaches the reader
-  // through whatever transparency they leave it: elevation's normal 0.75
-  // would pass a quarter of the shading - enough to tint the map, not enough
-  // to read as shape. 0.6 leaves 40%, which is where the terrain starts to
-  // look three-dimensional while each class still matches its legend chip.
-  const cap = chapter && chapter.layers && chapter.layers.hillshade ? 0.6 : 1;
+  // reducedOpacity WINS over the floor. It is set on exactly one chapter, "Why
+  // Homestead Is Different", whose whole job is showing vegetation, elevation,
+  // streets and shade at once with none of them dominating. Enforcing the floor
+  // there would make vegetation - which is added later in the stack - cover
+  // elevation wholesale, leaving elevation visible only inside the NDVI < 0.41
+  // holes. That reads as a rendering bug rather than as a deliberate overlay.
+  const floor = shaded && mode !== "reduced" ? SHADED_FILL_OPACITY_FLOOR : 0;
 
   map.setPaintProperty("vegetation-fill", "fill-color", VEGETATION_RAMP_NORMAL);
-  map.setPaintProperty(
-    "vegetation-fill",
-    "fill-opacity",
-    Math.min(mode === "reduced" ? 0.5 : 0.6, cap)
-  );
+  const vegOpacity = Math.max(mode === "reduced" ? 0.5 : 0.6, floor);
+  map.setPaintProperty("vegetation-fill", "fill-opacity", vegOpacity);
+  // The raster overlay replaces the vector fill wherever it loaded (see
+  // resolveVegetationLayerIds), so it takes the same opacity - one dial, so the
+  // two renderings of the same classification can never look like two
+  // different datasets.
+  if (map.getLayer(VEGETATION_LAYER_ID)) {
+    map.setPaintProperty(VEGETATION_LAYER_ID, "raster-opacity", vegOpacity);
+  }
   applyLegendSwatchColors("vegetation", extractRampColors(VEGETATION_RAMP_NORMAL));
 
   map.setPaintProperty("elevation-fill", "fill-color", ELEVATION_RAMP_NORMAL);
   map.setPaintProperty(
     "elevation-fill",
     "fill-opacity",
-    Math.min(mode === "reduced" ? 0.5 : 0.75, cap)
+    Math.max(mode === "reduced" ? 0.5 : 0.75, floor)
   );
   applyLegendSwatchColors("elevation", extractRampColors(ELEVATION_RAMP_NORMAL));
 
@@ -1541,7 +1735,13 @@ function updateLegend(activeLayers) {
 
   // Chapter-scroll resets every section to that chapter's authored state -
   // it overwrites any manual toggle left over from the previous chapter.
-  document.querySelectorAll(".legend-section").forEach((section) => {
+  //
+  // Scoped to #legend. Unscoped, this also reset the Block Explorer's pills
+  // (same markup, same data-layer values) to whatever the nearest scroll
+  // chapter happened to have on - so a reader who turned a layer on inside the
+  // Explorer would watch it turn itself back off as they scrolled. The
+  // Explorer owns that state via setExplorerLayerVisibility().
+  document.querySelectorAll("#legend .legend-section").forEach((section) => {
     const key = section.dataset.layer;
     const active = Boolean(activeLayers[key]);
     section.classList.toggle("active", active);
@@ -1900,7 +2100,7 @@ function openExplorerPopup(map, props, lngLat) {
   const captain =
     props.Block_Captian && props.Block_Captian.trim()
       ? props.Block_Captian
-      : "Not yet assigned — contact the Safety Committee";
+      : "Not yet assigned";
 
   if (!explorerPopup) {
     explorerPopup = new maplibregl.Popup({
@@ -2440,14 +2640,6 @@ function initMap(chapters, layerBounds) {
       paint: { "fill-color": "#000000", "fill-opacity": 0.08 }
     });
 
-    // Hillshade relief, added before every thematic fill so it sits at the
-    // bottom of the stack (no beforeId needed - nothing above it exists yet).
-    // See addHillshadeLayer() for why it's an image source.
-    addHillshadeLayer(map, {
-      layerId: HILLSHADE_LAYER_ID,
-      sourceId: HILLSHADE_SOURCE_ID
-    });
-
     // Terrain / elevation - real USGS 3DEP 1m LIDAR DEM (see topo_work/),
     // GDAL-polygonized (rasterio.features.shapes) into 8 hypsometric-tint
     // classes. Same colormap and class breaks as the reference cartographic
@@ -2508,6 +2700,23 @@ function initMap(chapters, layerBounds) {
       }
     });
 
+    // Smooth raster rendering of that same NDVI classification, drawn directly
+    // over the vector fill. Only one of the two is ever visible at a time -
+    // resolveVegetationLayerIds() decides which, after this block. See the
+    // VEGETATION_* block for why both exist.
+    addImageOverlayLayer(map, vegetationMeta, {
+      layerId: VEGETATION_LAYER_ID,
+      sourceId: VEGETATION_SOURCE_ID,
+      paint: {
+        // nearest, not the default linear. This is a CLASSIFIED image: linear
+        // magnification would interpolate between two class colours and paint
+        // a band of a fifth colour that appears in no legend. Blocking at the
+        // overlay's own ~1.25 m/px is the honest failure mode, and it is eight
+        // times finer than the 10 m staircase this layer exists to remove.
+        "raster-resampling": "nearest"
+      }
+    });
+
     // Bivariate fuel x elevation - the joint classification behind the
     // "Where Do We Have the Greatest Ability to Intervene?" chapter. Built by
     // bivariate_work/ (01 derives the elevation breaks, 02 the palette, 03
@@ -2539,6 +2748,20 @@ function initMap(chapters, layerBounds) {
         "fill-color": BIVARIATE_FILL_COLOR,
         "fill-opacity": BIVARIATE_FILL_OPACITY
       }
+    });
+
+    // Terrain shade, added AFTER every thematic fill so it composites on top of
+    // them - that layer order is the entire Multiply trick, see the HILLSHADE_*
+    // block. Added BEFORE the contours, roads and boundary line that follow, so
+    // those stay crisp: they are annotation, not terrain, and multiplying a
+    // white road halo down to grey would cost legibility for no gain.
+    addImageOverlayLayer(map, hillshadeMeta, {
+      layerId: HILLSHADE_LAYER_ID,
+      sourceId: HILLSHADE_SOURCE_ID
+      // No raster-contrast / -brightness / -saturation here, deliberately.
+      // They transform RGB and never alpha, so on an alpha-encoded operator
+      // they cannot change its strength - only corrupt its black/white sign
+      // channel. raster-opacity is the strength dial and defaults to 1 above.
     });
 
     // Elevation contour lines - real USGS 3DEP-derived contours (see
@@ -2629,6 +2852,12 @@ function initMap(chapters, layerBounds) {
     });
 
     buildWindArrows(map, layerBounds.homestead);
+
+    // Both after the addLayer calls above, because both inspect what actually
+    // got added, and both before mapLayersReady flips - setupScrollTriggers()
+    // immediately activates the first chapter off LEGEND_LAYER_IDS.
+    resolveVegetationLayerIds(map);
+    checkVegetationRampAgrees(extractRampColors(VEGETATION_RAMP_NORMAL));
 
     mapLayersReady = true;
     setupScrollTriggers(map, chapters, layerBounds);
@@ -2812,16 +3041,19 @@ function setupNavOffset(headerEl, toolbarEl) {
 
 // --- Bootstrap --------------------------------------------------------
 async function bootstrap() {
-  const [config, layerBounds, hillshade] = await Promise.all([
+  const [config, layerBounds, hillshade, vegetation] = await Promise.all([
     fetch("data/chapters.json").then((r) => r.json()),
     loadLayerBounds(),
-    loadHillshadeMeta()
+    loadHillshadeMeta(),
+    loadVegetationMeta()
   ]);
 
-  // addHillshadeLayer() reads this straight off the module scope rather than
-  // taking it as an argument, so it only has to be assigned before initMap()
-  // runs (below) - not before renderChapters().
+  // initMap() reads these straight off the module scope rather than taking them
+  // as arguments, so they only have to be assigned before initMap() runs
+  // (below) - not before renderChapters().
   hillshadeMeta = hillshade;
+  vegetationMeta = vegetation;
+  checkOverlayGridsAgree();
 
   applySettings(config.settings);
   applyTheme(config.theme);

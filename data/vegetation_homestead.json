@@ -1,0 +1,58 @@
+{
+  "image": "data/vegetation_homestead.png",
+  "coordinates": [
+    [
+      -122.5625421,
+      37.90319839
+    ],
+    [
+      -122.5318653,
+      37.90319839
+    ],
+    [
+      -122.5318653,
+      37.88801222
+    ],
+    [
+      -122.5625421,
+      37.88801222
+    ]
+  ],
+  "width": 2048,
+  "height": 1285,
+  "encoding": "classified-rgba",
+  "class_breaks_ndvi": [
+    0.41,
+    0.55,
+    0.7,
+    0.82
+  ],
+  "ramp": [
+    "#d9f0a3",
+    "#78c679",
+    "#31a354",
+    "#006837"
+  ],
+  "class_names": [
+    "sparse",
+    "moderate",
+    "dense",
+    "very_dense"
+  ],
+  "minimum_mapping_unit_m2": 200.0,
+  "feather_ndvi": 0.015,
+  "resampling": "bilinear",
+  "acres_raster": [
+    77.3,
+    112.39,
+    103.0,
+    90.64
+  ],
+  "acres_native_10m": [
+    81.03,
+    105.54,
+    109.37,
+    99.95
+  ],
+  "source": "Sentinel-2 L2A NDVI (NDVI_aoi.tif, 10 m, EPSG:32610), same breaks and MMU as homestead_ndvi_vegetation.geojson, bilinear-upsampled and classified on the shade overlay's Web Mercator grid"
+}

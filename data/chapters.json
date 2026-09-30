@@ -385,7 +385,7 @@
           "caption": "How slope, canyons and southwest aspect drive wildfire spread."
         }
       ],
-      "mapNote": "Elevation shown here is real USGS 3DEP 1m LIDAR-derived terrain (see topo_work/), classed into the same 8 hypsometric-tint bands used in the topography graphic above, over a hillshade rendered from the same 1m DEM and clipped to the CSA 14 boundary. Separate slope/aspect layers remain in that graphic only.",
+      "mapNote": "Elevation shown here is real USGS 3DEP 1m LIDAR-derived terrain (see topo_work/), classed into the same 8 hypsometric-tint bands used in the topography graphic above. The relief shading over it is computed from the same 1m DEM and clipped to the CSA 14 boundary. Separate slope/aspect layers remain in that graphic only.",
       "mapPosition": "left",
       "location": {
         "center": [
@@ -419,7 +419,7 @@
           "alt": "Definition of the wildland-urban interface (WUI)"
         }
       ],
-      "mapNote": "Vegetation density shown here (from Sentinel-2 NDVI analysis) is a real, data-derived proxy for fuel load across the wildland-urban interface. HVLT open space, Marin County lands and GGNRA boundaries are not yet available as GIS layers from the client, so they are not shown.",
+      "mapNote": "Vegetation density shown here (from Sentinel-2 NDVI analysis) is a real, data-derived proxy for fuel load across the wildland-urban interface, with relief shading from the 1m LIDAR DEM over it. Gaps in the green are ground that scored below the vegetated threshold on a September dry-season scene — roads, roofs and cured grass — not missing data. HVLT open space, Marin County lands and GGNRA boundaries are not yet available as GIS layers from the client, so they are not shown.",
       "mapPosition": "left",
       "location": {
         "center": [
