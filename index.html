@@ -5,15 +5,39 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Homestead Valley Wildfire StoryMap — Prototype</title>
 
-  <!-- Theme fonts (heading/body pairing configurable via data/chapters.json
-       "theme.fonts" - these Google Fonts links just need to match whatever
-       family names are set there). -->
+  <!-- A theme is more than a palette here: each one sets the page background,
+       surface treatment, hero scrim and nav colours through a block of custom
+       properties keyed on html[data-theme]. story.js sets that attribute, but
+       it can only do so after chapters.json has loaded - which would mean a
+       reader on the dark Serpentine theme gets a flash of the light default
+       first. This guesses the attribute from the same two sources story.js
+       checks first (?theme=, then the saved preference) so the very first
+       paint is already the right theme. story.js remains authoritative. -->
+  <script>
+    (function () {
+      var known = ["ember", "fog", "serpentine", "fieldbook"];
+      var name = null;
+      try {
+        name = new URLSearchParams(location.search).get("theme")
+          || localStorage.getItem("storymap-theme");
+      } catch (e) {
+        /* localStorage throws in private mode and on some file:// URLs */
+      }
+      if (known.indexOf(name) !== -1) document.documentElement.dataset.theme = name;
+    })();
+  </script>
+
+  <!-- Each theme in data/chapters.json "themes" declares its own font pairing
+       and the Google Fonts URL that serves it; applyTheme() in js/story.js
+       injects that stylesheet when the theme is applied. Only the default
+       pairing is loaded statically here, so first paint isn't waiting on
+       fonts the reader may never see. -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Noto+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet" />
 
   <link href="https://unpkg.com/maplibre-gl@^4/dist/maplibre-gl.css" rel="stylesheet" />
-  <link href="css/style.css?v=28" rel="stylesheet" />
+  <link href="css/style.css?v=35" rel="stylesheet" />
 </head>
 <body>
 
@@ -49,14 +73,29 @@
       <span class="wind-key-item wind-key-diablo">Diablo Wind <small>offshore &middot; NE&rarr;SW</small></span>
       <span class="wind-key-item wind-key-reverse">Reverse Wind <small>onshore &middot; SW&rarr;NE</small></span>
     </div>
+    <!-- Inside #map, not a sibling of it. The map is no longer pinned to
+         the viewport - it is a full-width band at the top of whichever map
+         chapter the reader is in, and dockMapInStage() moves this whole
+         element between chapters. A legend anchored to the viewport would
+         be left floating over the narrative text below the map, keyed to a
+         map that had already scrolled past. -->
+    <div id="legend"></div>
+    <button type="button" id="legend-reopen" class="legend-reopen" aria-label="Show legend">Legend</button>
   </div>
+  <!-- The media panel: pinned to the viewport and filled by
+       placeMediaForChapter() as the reader scrolls. Deliberately a sibling
+       of #story rather than a child, because #story is the scrolling
+       narrative and this must not scroll with it.
+
+       Unlike #map above, this one is still viewport-pinned, so it is also
+       the only element setupFooterRelease() has to let go of at the end of
+       the page. It yields to a map band when one is on screen - see
+       setupMapStageGuard(). -->
   <div id="media-sidecar"></div>
-  <div id="legend"></div>
-  <button type="button" id="legend-reopen" class="legend-reopen" aria-label="Show legend">Legend</button>
   <div id="story"></div>
   <footer id="footer"></footer>
 
   <script src="https://unpkg.com/maplibre-gl@^4/dist/maplibre-gl.js"></script>
-  <script src="js/story.js?v=28"></script>
+  <script src="js/story.js?v=35"></script>
 </body>
 </html>

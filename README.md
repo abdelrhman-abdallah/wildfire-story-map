@@ -1,22 +1,25 @@
 # Homestead Valley StoryMap — Working Prototype
 
-A minimal, no-build-step scroll-driven story map: a persistent MapLibre GL JS
-map stays on screen while chapters scroll past it, changing the map's
-camera, visible layers, and legend as you go — and docking itself to the
-left or right of the text (or hiding entirely for text-only chapters), the
-same way ArcGIS StoryMaps' "sidecar" blocks behave. This version is
-hand-built so it's fully inspectable/editable as plain HTML/CSS/JS, using
-MapLibre GL JS (open source, no API key/account) instead of Mapbox.
+A minimal, no-build-step scroll-driven story map. A map chapter opens with a
+full-width band of map and the narrative follows underneath it, so the two
+never overlap and the map scrolls away like any other block. There is still
+only **one** MapLibre GL JS instance on the page: it is moved into whichever
+chapter's map band is coming up, and its camera, visible layers and legend
+change as you go. Photos and video sit in a column beside the chapter's
+text — in normal flow, not pinned to the window — so nothing ever overlaps
+anything else. This version is hand-built so it's fully inspectable/editable as
+plain HTML/CSS/JS, using MapLibre GL JS (open source, no API key/account)
+instead of Mapbox.
 
 **Everything in here is placeholder content** — the point is to prove out
 the mechanics (hero/title screen, text chapters, photo embeds, video
-embeds, sidecar map layers, legend, theme, footer) before wiring in final
+embeds, map layers, legend, theme, footer) before wiring in final
 narrative copy, final graphics, and final GIS data.
 
 ## What's in this prototype
 
 - `index.html` — page shell, loads MapLibre GL JS + Google Fonts from a CDN (no API key/account needed)
-- `css/style.css` — theme variables, hero/cover styling, sidecar layout (map left/right/hidden), legend, footer
+- `css/style.css` — the theme token system (`:root` plus one block per `html[data-theme]`), hero/cover styling, the stacked map-chapter layout, the text+media chapter row, the nav bar, legend, footer
 - `js/story.js` — all logic: loads `data/chapters.json`, renders the hero + chapters, drives the map, legend, theme, and footer
 - `data/chapters.json` — **the only file you need to touch to change content.** Plain JSON, no JavaScript knowledge needed.
 - `data/dummy-csa14-boundary.geojson` — placeholder shape standing in for the real Marin County CSA 14 (Homestead Valley) boundary
@@ -51,44 +54,212 @@ no code changes needed.
 - **`legendPosition`** — `"left"` or `"right"` — which bottom corner the
   legend box sits in.
 
-### `"theme"` block — colors and fonts
+### `"themes"` + `"activeTheme"` — colors and fonts
+
+Four themes ship with the prototype. `"activeTheme"` names the one that
+loads by default; the rest are available from the theme picker in the nav.
+A theme is more than a palette — it changes the page background, the
+surface treatment, the hero scrim and the nav — so each one is defined in
+two places, described under *Where a theme lives* below.
 
 ```json
-"theme": {
-  "colors": {
-    "primary": "#c0392b",
-    "secondary": "#e67e22",
-    "accent": "#2c3e91",
-    "dark": "#1c1c1c",
-    "light": "#fdf6f0"
-  },
-  "fonts": {
-    "heading": "'Poppins', 'Segoe UI', sans-serif",
-    "body": "'Noto Serif', Georgia, serif"
+"activeTheme": "ember",
+"themes": {
+  "ember": {
+    "label": "Ember",
+    "colors": {
+      "primary": "#c0392b",
+      "secondary": "#e67e22",
+      "accent": "#2c3e91",
+      "dark": "#1c1c1c",
+      "light": "#fdf6f0"
+    },
+    "fonts": {
+      "heading": "'Poppins', 'Segoe UI', sans-serif",
+      "body": "'Noto Serif', Georgia, serif"
+    },
+    "fontsHref": "https://fonts.googleapis.com/css2?family=Poppins..."
   }
 }
 ```
 
-These are applied at runtime as CSS custom properties (`--color-primary`,
-`--font-heading`, etc.), so changing a hex code or font name here updates
-the whole site — dummy tags, icons, hero eyebrow text, footer, everything
-— with no CSS edits required. If you swap in a font name other than
-Poppins/Noto Serif, also update the Google Fonts `<link>` in `index.html`
-to load it.
+| Theme | What it is for | Primary / Secondary / Accent | Fonts |
+| --- | --- | --- | --- |
+| `ember` | The original wildfire red, on a warm sunlit paper | `#c0392b` `#e67e22` `#2c3e91` | Poppins / Noto Serif |
+| `fog` | The living landscape. All the chrome is desaturated, so the only saturated colour on screen is map data | `#3a5c4c` `#7f8f73` `#3f6480` | Archivo / Newsreader |
+| `serpentine` | Dark, for presenting to a room with the lights down | `#4ca08c` `#dd8a3e` `#5f9ec9` | Chivo / Literata |
+| `fieldbook` | The assessment artifact: a white sheet on manila, faintly ruled | `#1c6b8c` `#c2691f` `#44565f` | IBM Plex Sans Condensed / IBM Plex Serif |
 
-### Per-chapter `"mapPosition"` — the sidecar layout
+`fog` and `fieldbook` hold their colour back on purpose. The page is
+mostly a map of real vegetation, elevation and road data, and a saturated
+interface competes with it for the reader's eye. `serpentine` exists
+because this gets shown at community meetings on a projector, where a
+bright page is the wrong thing in the room.
+
+**Which role goes where.** `primary` is the nav marker and the narrative
+card's signal edge; `secondary` is the hero dateline rule, the scroll cue
+and chapter numbers; `accent` is Block Explorer outlines and focus rings;
+`dark` and `light` are map label ink and halo (see the constraint below).
+
+**Where a theme lives.** Two files, with one rule for which:
+
+- `data/chapters.json` holds the five colours and the two font families.
+  These are the values the map needs, because MapLibre paint properties
+  cannot read CSS custom properties — `themeColor()` in `js/story.js`
+  reads the computed value back out instead. `applyTheme()` writes them
+  as inline styles on `<html>`, so they win over any stylesheet rule.
+- `css/style.css` holds everything else, as a block of ~40 custom
+  properties under `html[data-theme="<name>"]`: page background, surface
+  fills, radii, shadows, rule colours, ink ramp, nav colours, the hero
+  scrim, the footer. `:root` carries the full set as the `ember`
+  defaults, and each theme block overrides what it needs to change.
+
+So **adding a theme is two edits**, not one: an entry in `"themes"` and a
+matching `html[data-theme]` block. Add the name to the short whitelist in
+the inline script at the top of `index.html` too — that script sets
+`data-theme` from `?theme=` / `localStorage` before first paint, so a
+reader on `serpentine` does not get a flash of the light default while
+`chapters.json` is still loading. `story.js` then sets the attribute
+again, authoritatively, once the config is in.
+
+The map layers that carry branding (the Marin-context boundary highlight,
+Block Explorer outlines and labels) repaint on switch. Layers that encode
+*data* — the vegetation classes, elevation ramp and contour brown, all
+described in the legend — are deliberately left alone.
+
+**One hard constraint on `dark` and `light`.** They are not just text
+colours: `dark` is the `text-color` of the Block Explorer block labels and
+`light` is the `text-halo-color` of the contour labels, both drawn over
+the light CARTO Positron basemap. So in *every* theme, including
+`serpentine`, `dark` has to stay dark enough to read on a pale map and
+`light` light enough to halo against it. Inverting them for a dark theme
+would make the map labels illegible.
+
+Each theme names its own Google Fonts URL in `fontsHref`, injected the
+first time that theme is applied; only the default pairing is loaded
+statically in `index.html`.
+
+**Switching:** click the swatches in the nav (the choice is remembered in
+`localStorage`), or force one with a query string — `index.html?theme=fieldbook`
+— which is handy for sharing a specific look without committing to it.
+
+### Two visual languages: Voice and Instrument
+
+The stylesheet splits every surface into one of two families, and the
+theme tokens are named for which:
+
+- **Voice** (`--voice-*`) — someone talking. The narrative card, the
+  pull-quotes, the footer. Soft shadow, a coloured edge on the left, text
+  set to a reading measure (`--voice-measure`).
+- **Instrument** (`--panel-*`) — something you operate or read a value
+  off. Map buttons, the legend, the map popup, the basemap bed. Hairline
+  ring, tight radius, near-flat.
+
+Before this split every one of those surfaces shared a single radius and a
+single shadow, which left no way to tell a control apart from a sentence.
+If you add a surface, pick a family and use its tokens rather than
+introducing a third treatment.
+
+### Per-chapter `"mapPosition"` — does this chapter show the map?
 
 ```json
 "mapPosition": "left" | "right" | "none"
 ```
 
-This is the config knob for the exact behavior ArcGIS StoryMaps calls a
-"sidecar": as a chapter scrolls into view, the single persistent map
-either docks to the **left** of the text, docks to the **right** of the
-text, or is **hidden entirely** (`"none"`) so the text renders full-width
-and centered, like a plain narrative panel. There's only ever one MapLibre
-instance on the page — this setting just moves/hides it with CSS as the
-user scrolls, so transitions stay smooth and cheap.
+Either of `"left"` / `"right"` makes this a **map chapter**: it opens with a
+full-width band of map (85% of the viewport height, 58% on phones — the
+`--map-stage-h` token in `css/style.css`) and the chapter's text and map note
+run underneath it in normal flow. The reader scrolls the map away to read.
+`"none"` hides the map entirely and the text renders full-width and centered,
+like a plain narrative panel.
+
+A map chapter can have photographs too — `"mapPosition"` and
+`"mediaPosition"` are independent. The media panel just waits until the band
+has scrolled off; see **Two things that make the panel yield** below. Note
+that a map chapter's section is `display: block`, so the `justify-content`
+that docks the text card has to be restated on `.chapter-stage-text`, the
+flex container the card is actually a child of.
+
+`"left"` and `"right"` currently behave identically, since the map is no
+longer docked to one side; the two values are kept so the layout can be
+changed back per chapter without re-editing the data file.
+
+There is only ever one MapLibre instance on the page. As you scroll, the
+`#map` element is physically moved into the next map chapter's band — moving
+a `<canvas>` between parents doesn't disturb its WebGL context, so this costs
+one `resize()` and nothing else. The move is only safe because every map
+chapter reserves at least a full viewport of text below its band, which
+guarantees two bands are never on screen at once; if you change
+`.chapter-stage-text`'s `min-height` in the CSS, keep it at `100vh` or more.
+
+### Per-chapter `"mediaPosition"` — where the photos sit
+
+```json
+"mediaPosition": "right" | "left" | "full" | "none"
+```
+
+**Every image and video in the story lives in one place: `#media-sidecar`.**
+There are no images inline in the prose. A chapter's `"media"` array is
+rendered into that one panel by `placeMediaForChapter()` when the chapter
+activates, and `"mediaPosition"` says where the panel docks. The panel is
+`position: fixed`, a sibling of `#story`, so it stays put while the words
+scroll past it.
+
+- `"right"` (the default) — panel docked to the right 58% of the viewport;
+  the text card is pushed into the free left-hand 42%.
+- `"left"` — mirror image.
+- `"full"` — panel takes the whole viewport width and the text card floats
+  on top of it. For media too wide to read in a half-viewport panel: the
+  valley panoramas (11800 px and 12554 px) and the full-page posters.
+  Currently only `welcome` uses it.
+- `"none"` — panel fades out, text card centres at the wider measure.
+
+The default is **media-aware**, which matters more than it sounds: a chapter
+with media and no `"mediaPosition"` key gets `"right"` (an omitted key never
+throws content away), and a chapter with *no* media is forced to `"none"`
+regardless of what the key says (so a text-only chapter never fades in an
+empty panel). Anything unrecognised falls back to `"right"` — a typo costs
+you a layout preference, not the content.
+
+The text card's measure (`--voice-measure`, 32 rem) is sized to clear a
+docked panel: at 1440 px the free 42% strip is 605 px and `--gutter` takes
+86 px, so 32 rem (512 px) fits with room to spare. If you widen the dock
+past 58%, re-check that arithmetic.
+
+Images are never cropped — `width/height: auto` with `max-width/max-height:
+100%` means the element box takes each image's real aspect ratio, so the
+frame hugs the artwork instead of letterboxing it.
+
+Below 820 px there is no "side" to dock to: the panel becomes a full-width
+46vh band at the top of the viewport and the card is padded down to clear
+it.
+
+#### Two things that make the panel yield
+
+The panel is pinned to the *viewport*; the map band is in the *page*. Both
+want the same pixels, and the panel can't simply be painted over, because
+`.chapter-map-stage` is deliberately transparent (that's what makes the
+`--map-frame-pad` inset read as a frame) — the photograph would show through
+as a band running around the map. So:
+
+- `body.map-stage-onscreen` — set by `setupMapStageGuard()` while *any* map
+  band is intersecting the viewport. The panel hides, and comes back as the
+  reader scrolls down into that chapter's narrative: ground first,
+  photograph second. The guard counts intersecting stages in a `Set` rather
+  than tracking a boolean, so during a hand-off between two bands the one
+  leaving can't clear the class out from under the one arriving.
+- `body.explorer-active` — the Block Explorer is a plain section, not a
+  `.chapter`, so `placeMediaForChapter()` never runs for it and the panel
+  would hang over it still showing the previous chapter's photograph.
+
+Both rules live *after* the `body.media-pos-*` dock rules in
+`css/style.css` and must stay there: they tie on specificity (one id, one
+class, one type), so source order is the only thing deciding them.
+
+`setupFooterRelease()` is the third case — it lets the panel go at the very
+bottom of the page so the footer isn't read through it. `#map` is
+deliberately *not* in that function any more, because it scrolls away with
+its own chapter.
 
 ### Per-chapter `"icon"`
 
@@ -110,11 +281,18 @@ or sets it to `true`, keeps showing the tag.
 ### The `"isTitleScreen"` hero chapter
 
 The first chapter in the array is normally the hero/cover: a full-bleed
-background image with a dark gradient overlay, a centered eyebrow/title/
-lede, and an animated "scroll to begin" cue — the same convention ArcGIS
-StoryMaps uses for its cover. Mark a chapter this way with
-`"isTitleScreen": true` and give it an `"eyebrow"` field for the small
-label above the title.
+background image or video, a themed scrim over it (`--hero-scrim`), and
+the eyebrow/title/lede set bottom-left on a reading measure rather than
+centered — so the title shares its left edge with every chapter that
+follows it. Mark a chapter this way with `"isTitleScreen": true` and give
+it an `"eyebrow"` field, which reads as a dateline (*where* this is
+about) under a short rule.
+
+The "scroll to begin" cue is the page's only piece of motion that the
+reader did not trigger, and it is there to do a job: tell a first-time
+visitor that this page is driven by scrolling. It is a line travelling
+down a 1px track, and it holds still under
+`prefers-reduced-motion: reduce`.
 
 ### `"footer"` block
 
@@ -168,8 +346,23 @@ then open `http://localhost:8765/`.
   current chapter is active (instead of showing an empty box).
 - Video (local file or YouTube) auto-pauses once its chapter is fully
   scrolled out of view — see `pauseVideoOffscreen` above to turn this off.
-- The map smoothly slides between left-docked, right-docked, and hidden
-  as you scroll between chapters with different `mapPosition` values.
+- The map hands itself off from one map chapter's band to the next as you
+  scroll, and fades out entirely on `"mapPosition": "none"` chapters. The
+  hand-off happens while both bands are off screen, so you never see it.
+- Both maps sit inside a themed frame — inset from the edge of their band,
+  with the hairline, radius and shadow the rest of the page's controls use
+  (`--map-frame-pad` / `--map-frame-radius`), so a map reads as a framed
+  exhibit rather than a hole cut through the page.
+- The nav bar is one tier: the eight narrative sections, plus a pinned tail
+  on the right holding the **Explore Your Block** button and the theme
+  swatches. The section tabs may wrap to a second line on a narrow window;
+  the tail never moves. There used to be a second tier listing every
+  chapter in the active section — 46 pills nobody aimed at, and because it
+  appeared and disappeared per section it changed the height of a sticky
+  element mid-scroll, which the reader saw as the page jumping.
+- **Explore Your Block** is drawn as a filled call-to-action rather than
+  another tab, because it's the one interactive thing on the page. It
+  carries a slow halo animation, suppressed under `prefers-reduced-motion`.
 
 ## Known placeholder caveats
 

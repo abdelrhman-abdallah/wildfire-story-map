@@ -3,17 +3,67 @@
     "pauseVideoOffscreen": true,
     "legendPosition": "left"
   },
-  "theme": {
-    "colors": {
-      "primary": "#c0392b",
-      "secondary": "#e67e22",
-      "accent": "#2c3e91",
-      "dark": "#1c1c1c",
-      "light": "#fdf6f0"
+  "activeTheme": "ember",
+  "themes": {
+    "ember": {
+      "label": "Ember",
+      "colors": {
+        "primary": "#c0392b",
+        "secondary": "#e67e22",
+        "accent": "#2c3e91",
+        "dark": "#1c1c1c",
+        "light": "#fdf6f0"
+      },
+      "fonts": {
+        "heading": "'Poppins', 'Segoe UI', sans-serif",
+        "body": "'Noto Serif', Georgia, serif"
+      },
+      "fontsHref": "https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Noto+Serif:ital,wght@0,400;0,600;1,400&display=swap"
     },
-    "fonts": {
-      "heading": "'Poppins', 'Segoe UI', sans-serif",
-      "body": "'Noto Serif', Georgia, serif"
+    "fog": {
+      "label": "Fog & Chaparral",
+      "colors": {
+        "primary": "#3a5c4c",
+        "secondary": "#7f8f73",
+        "accent": "#3f6480",
+        "dark": "#212a26",
+        "light": "#f1f4f2"
+      },
+      "fonts": {
+        "heading": "'Archivo', 'Segoe UI', sans-serif",
+        "body": "'Newsreader', Georgia, serif"
+      },
+      "fontsHref": "https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400&display=swap"
+    },
+    "serpentine": {
+      "label": "Serpentine",
+      "colors": {
+        "primary": "#4ca08c",
+        "secondary": "#dd8a3e",
+        "accent": "#5f9ec9",
+        "dark": "#0d1917",
+        "light": "#e9f1ee"
+      },
+      "fonts": {
+        "heading": "'Chivo', 'Segoe UI', sans-serif",
+        "body": "'Literata', Georgia, serif"
+      },
+      "fontsHref": "https://fonts.googleapis.com/css2?family=Chivo:wght@400;600;700&family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;1,7..72,400&display=swap"
+    },
+    "fieldbook": {
+      "label": "Fieldbook",
+      "colors": {
+        "primary": "#1c6b8c",
+        "secondary": "#c2691f",
+        "accent": "#44565f",
+        "dark": "#19222a",
+        "light": "#f7f3e9"
+      },
+      "fonts": {
+        "heading": "'IBM Plex Sans Condensed', 'Segoe UI', sans-serif",
+        "body": "'IBM Plex Serif', Georgia, serif"
+      },
+      "fontsHref": "https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap"
     }
   },
   "legend": {
@@ -351,6 +401,7 @@
         "alt": "View toward Mount Tamalpais from within Homestead Valley",
         "caption": "Looking toward Mount Tamalpais from within Homestead Valley."
       },
+      "mediaPosition": "right",
       "mapPosition": "left",
       "location": {
         "center": [
@@ -381,6 +432,7 @@
         "alt": "Marin County's official reference map of the CSA 14 boundary",
         "caption": "The County's official CSA 14 boundary reference map."
       },
+      "mediaPosition": "right",
       "mapPosition": "left",
       "location": {
         "center": [
@@ -698,6 +750,7 @@
           "caption": "Understanding your home's risk — four exposure profiles, four different places to start."
         }
       ],
+      "mediaPosition": "right",
       "mapPosition": "left",
       "location": {
         "center": [
@@ -736,6 +789,7 @@
         }
       ],
       "mapNote": "Elevation shown here is real USGS 3DEP 1m LIDAR-derived terrain (see topo_work/), classed into the same 8 hypsometric-tint bands used in the topography graphic above. The relief shading over it is computed from the same 1m DEM and clipped to the CSA 14 boundary. Separate slope/aspect layers remain in that graphic only.",
+      "mediaPosition": "right",
       "mapPosition": "left",
       "location": {
         "center": [
@@ -770,6 +824,7 @@
         }
       ],
       "mapNote": "Vegetation density shown here (from Sentinel-2 NDVI analysis) is a real, data-derived proxy for fuel load across the wildland-urban interface, with relief shading from the 1m LIDAR DEM over it. Gaps in the green are ground that scored below the vegetated threshold on a September dry-season scene — roads, roofs and cured grass — not missing data. HVLT open space, Marin County lands and GGNRA boundaries are not yet available as GIS layers from the client, so they are not shown.",
+      "mediaPosition": "right",
       "mapPosition": "left",
       "location": {
         "center": [
@@ -805,6 +860,7 @@
         }
       ],
       "mapNote": "Diablo (offshore) and reverse (onshore) wind arrows are schematic direction indicators, not a meteorological model.",
+      "mediaPosition": "right",
       "mapPosition": "left",
       "location": {
         "center": [
@@ -868,6 +924,7 @@
         }
       ],
       "mapNote": "Trail overlay shown is a placeholder — final version will show the HVLT trail system with labeled trailheads and ridges.",
+      "mediaPosition": "right",
       "mapPosition": "left",
       "location": {
         "center": [

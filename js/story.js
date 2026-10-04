@@ -33,6 +33,15 @@ let currentChapterId = null;
 let mapInstance = null;
 let mapLayersReady = false;
 
+// The Block Explorer runs a second, independent MapLibre instance. Held here
+// so a theme switch can repaint its themed layers too.
+let explorerMapInstance = null;
+
+// Last chapter handed to updateHomesteadBoundaryStyle(). A theme switch has to
+// re-run that paint for the chapter currently on screen, because the
+// Marin-context highlight is drawn in the theme's primary colour.
+let currentBoundaryChapter = null;
+
 // Maps each legend/chapters.json layer key to the real MapLibre layer id(s)
 // it controls (homesteadHighlight is backed by a fill + line pair sharing
 // one on/off state; the old sample "risk"/"points" dummy layers and the
@@ -378,7 +387,12 @@ function setMapLayerVisibility(layerKey, visible) {
 // Only "homestead-in-marin" is true - every other chapter showing the
 // boundary uses the subtle black/transparent treatment instead.
 const HOMESTEAD_BOUNDARY_STYLES = {
-  marin: { fillColor: "#c0392b", fillOpacity: 0.55, lineColor: "#c0392b", lineWidth: 2.5 },
+  // Resolved on read (not at module load) so the highlight tracks the active
+  // theme's primary even when the reader switches theme mid-story.
+  get marin() {
+    const color = themeColor("primary", "#c0392b");
+    return { fillColor: color, fillOpacity: 0.55, lineColor: color, lineWidth: 2.5 };
+  },
   default: { fillColor: "#000000", fillOpacity: 0.08, lineColor: "#000000", lineWidth: 2 },
   // Line-only (fill fully transparent) - used whenever a chapter stacks two
   // or more thematic layers (vegetation/elevation/contours/streets) on top
@@ -390,6 +404,7 @@ const HOMESTEAD_BOUNDARY_STYLES = {
 };
 
 function updateHomesteadBoundaryStyle(map, chapter) {
+  currentBoundaryChapter = chapter;
   if (!map || !mapLayersReady) return;
 
   const layers = (chapter && chapter.layers) || {};
@@ -702,9 +717,64 @@ function updateWindIndicator(chapter) {
 // var(--color-primary), var(--font-heading), etc. Falls back to whatever
 // defaults are already declared on :root in style.css if chapters.json
 // doesn't supply a theme block.
-function applyTheme(theme) {
+//
+// chapters.json carries a "themes" registry plus an "activeTheme" key. The
+// selected name resolves in this order, first hit wins:
+//   1. ?theme=<name> in the URL        - one-off share/preview link
+//   2. localStorage                    - the reader's own switcher choice
+//   3. config.activeTheme              - the committed default
+const THEME_STORAGE_KEY = "storymap-theme";
+let THEMES = {};
+let activeThemeName = null;
+
+function resolveThemeName(config) {
+  const available = Object.keys(config.themes || {});
+  if (!available.length) return null;
+
+  const fromUrl = new URLSearchParams(location.search).get("theme");
+  if (fromUrl && available.includes(fromUrl)) return fromUrl;
+
+  // localStorage throws in private-mode Safari and when the page is opened
+  // from a file:// URL in some browsers - a missing preference is never fatal.
+  let stored = null;
+  try {
+    stored = localStorage.getItem(THEME_STORAGE_KEY);
+  } catch (err) {
+    stored = null;
+  }
+  if (stored && available.includes(stored)) return stored;
+
+  if (config.activeTheme && available.includes(config.activeTheme)) {
+    return config.activeTheme;
+  }
+  return available[0];
+}
+
+// Each theme names its own Google Fonts pairing. Rather than making every
+// visitor download all four pairings up front, the stylesheet for a theme is
+// injected the first time that theme is applied (index.html statically loads
+// only the default pairing, so first paint is never blocked).
+function ensureThemeFonts(href) {
+  if (!href) return;
+  const existing = document.querySelector(`link[data-theme-font="${href}"]`);
+  if (existing) return;
+  const link = document.createElement("link");
+  link.rel = "stylesheet";
+  link.href = href;
+  link.dataset.themeFont = href;
+  document.head.appendChild(link);
+}
+
+// The five map-facing colours live in chapters.json because MapLibre reads
+// them back through themeColor(). Everything else a theme changes - page
+// background, surface treatment, scrim, nav, rules - is a block of custom
+// properties under html[data-theme="..."] in the stylesheet, which is why the
+// theme's *name* has to land on the root element too.
+function applyTheme(theme, name) {
   if (!theme) return;
   const root = document.documentElement;
+
+  if (name) root.dataset.theme = name;
 
   Object.entries(theme.colors || {}).forEach(([name, value]) => {
     root.style.setProperty(`--color-${name}`, value);
@@ -713,6 +783,69 @@ function applyTheme(theme) {
   const fonts = theme.fonts || {};
   if (fonts.heading) root.style.setProperty("--font-heading", fonts.heading);
   if (fonts.body) root.style.setProperty("--font-body", fonts.body);
+
+  ensureThemeFonts(theme.fontsHref);
+}
+
+// Reads a resolved theme colour back out of the cascade. The MapLibre layers
+// need real colour strings (they can't consume CSS custom properties), so they
+// ask for the computed value instead of hardcoding hexes that would drift out
+// of sync with the active theme.
+function themeColor(name, fallback) {
+  const value = getComputedStyle(document.documentElement)
+    .getPropertyValue(`--color-${name}`)
+    .trim();
+  return value || fallback;
+}
+
+// Block Explorer outlines: secondary marks the selected block, accent the rest.
+function explorerBlockLineColor() {
+  return [
+    "case",
+    ["boolean", ["feature-state", "selected"], false], themeColor("secondary", "#e67e22"),
+    themeColor("accent", "#2c3e91")
+  ];
+}
+
+// The themed MapLibre paint properties are baked in as literal colour strings
+// when each layer is added, so switching theme after load has to push the new
+// values back onto the live layers. Everything else on the map (vegetation
+// classes, elevation ramp, contour brown) is deliberately untouched: those are
+// data encodings described by the legend, not branding.
+function restyleMapForTheme() {
+  [mapInstance, explorerMapInstance].forEach((instance) => {
+    if (!instance || !instance.isStyleLoaded()) return;
+    const setPaint = (layerId, prop, value) => {
+      if (instance.getLayer(layerId)) instance.setPaintProperty(layerId, prop, value);
+    };
+    setPaint("explorer-blocks-line", "line-color", explorerBlockLineColor());
+    setPaint("explorer-blocks-label", "text-color", themeColor("dark", "#1c1c1c"));
+    setPaint("contours-label", "text-halo-color", themeColor("light", "#fdf6f0"));
+    setPaint("explorer-contours-label", "text-halo-color", themeColor("light", "#fdf6f0"));
+  });
+  // Re-runs the boundary paint for whatever chapter is on screen, which is
+  // what picks up the new primary for the Marin-context highlight.
+  if (mapInstance && currentBoundaryChapter) {
+    updateHomesteadBoundaryStyle(mapInstance, currentBoundaryChapter);
+  }
+}
+
+// Switcher entry point: apply, persist, and restyle the already-built map.
+function setActiveTheme(name) {
+  const theme = THEMES[name];
+  if (!theme) return;
+  activeThemeName = name;
+  applyTheme(theme, name);
+  try {
+    localStorage.setItem(THEME_STORAGE_KEY, name);
+  } catch (err) {
+    /* preference is best-effort only */
+  }
+  document.querySelectorAll(".theme-option").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.theme === name);
+    btn.setAttribute("aria-checked", String(btn.dataset.theme === name));
+  });
+  restyleMapForTheme();
 }
 
 // --- Icons ------------------------------------------------------------
@@ -823,6 +956,43 @@ function normalizeMedia(chapter) {
   return media;
 }
 
+// Where a chapter's media is shown. Read straight off "mediaPosition" in
+// data/chapters.json; drives both the docked #media-sidecar panel and which
+// side the text card has to keep clear.
+//
+//   "right"   panel docked over the right 58% of the viewport, card left
+//   "left"    panel docked over the left 58%, card right
+//   "full"    panel spans the whole width and the card floats on top of it.
+//             For material too wide to read in a half panel - the welcome
+//             panoramas are 3:1 - where the picture IS the chapter rather
+//             than an illustration of it.
+//   "none"    no panel; the card is centred and owns the screen
+//
+// The key used to carry a fifth, implicit meaning: anything that was not
+// left/right/full dropped the media INLINE, into the middle of the
+// chapter's prose. That inline path is gone - a photo has exactly one place
+// it can appear now - so an unrecognised or absent key falls back to
+// "right" when the chapter actually has media, and to "none" when it does
+// not. A typo in the JSON therefore costs a side preference, never the
+// content, and a text-only chapter never fades in an empty panel.
+//
+// An explicit "none" on a chapter that HAS media is honoured as written -
+// that is an author saying "not this one", which is different from an
+// author saying nothing.
+//
+// This is a sibling of "mapPosition" in the data but independent of it: the
+// map is a full-width band inside the chapter and no longer competes for a
+// side. Where the two would collide - the panel sitting over the band while
+// it is on screen - is handled at scroll time by setupMapStageGuard(), not
+// here.
+const MEDIA_POSITIONS = ["left", "right", "full", "none"];
+
+function mediaPositionFor(chapter) {
+  if (!normalizeMedia(chapter).length) return "none";
+  const want = String(chapter.mediaPosition || "").toLowerCase();
+  return MEDIA_POSITIONS.includes(want) ? want : "right";
+}
+
 function renderMediaItemInner(item) {
   if (item.type === "video") {
     // `youtubeUrl` is the documented field, but a URL pasted into `src` (the
@@ -869,19 +1039,20 @@ function renderMediaItemInner(item) {
 }
 
 // Builds a self-contained gallery: a sliding track of media items, plus
-// prev/next arrows and dot indicators once there's more than one item. Used
-// both inline (inside a chapter-content card) and in the full-bleed sidecar
-// panel (see #media-sidecar / placeMediaForChapter()) - a chapter can send
-// its media either place via
-// "mediaPosition": "inline" | "left" | "right" | "full".
+// prev/next arrows and dot indicators once there's more than one item.
+// Every chapter's images and video go through this one component, and it
+// has exactly one destination: the docked #media-sidecar panel (see
+// placeMediaForChapter()). It used to also be rendered inline inside a
+// chapter card, which is why the base CSS still carries a top margin that
+// the sidecar overrides.
 
 // --- Image fullscreen modal ------------------------------------------------
 // One overlay, lazily built on first use and reused for every image on the
-// page (inline carousels, the docked sidecar, wherever) - keeps this to a
-// single DOM node/listener set instead of one modal per slide. Sidecar
-// images are cropped with object-fit:cover to fill their panel; this modal
-// renders the same <img> with object-fit:contain instead, so the reader can
-// always see the whole photo at its real aspect ratio.
+// page - keeps this to a single DOM node/listener set instead of one modal
+// per slide. The sidecar already sizes its images with object-fit:contain,
+// so this is not about uncropping them; it is about scale. A tall diagram
+// in a 58% panel is legible as a composition but not as a document, and
+// this gives the reader the whole screen for it.
 let imageModal = null;
 
 function ensureImageModal() {
@@ -1035,10 +1206,10 @@ function renderMediaCarousel(mediaItems) {
 
 // --- Chapter rendering ---------------------------------------------------
 // Two distinct shapes: a full-bleed hero/title screen (isTitleScreen), and
-// regular chapters, which render as a floating text card. Where that card
-// sits is driven by whichever docked side panel the chapter is using - the
-// persistent map ("mapPosition") or the media sidecar ("mediaPosition") -
-// see placeMapForChapter()/placeMediaForChapter().
+// regular chapters, which render as a text card with its media alongside -
+// optionally under a band of map, if "mapPosition" says this chapter has
+// one. See renderChapter() for the structure and placeMapForChapter() for
+// how the shared map moves into the band.
 function renderHeroChapter(story, chapter) {
   const section = document.createElement("section");
   section.className = "chapter hero";
@@ -1055,6 +1226,13 @@ function renderHeroChapter(story, chapter) {
   // back to the original static background-image div. `image`/`image.src`
   // doubles as the video's poster frame so there's never a blank/black
   // flash before the (large) video file has buffered enough to play.
+  //
+  // The poster attribute is omitted rather than left empty when the chapter
+  // supplies neither: poster="" does not mean "no poster", it resolves to
+  // the page's own URL, so the browser fetches index.html and tries to
+  // decode the HTML as an image - a wasted request on an origin whose
+  // connections this video is already competing for.
+  const heroPoster = bgVideo && (bgVideo.poster || bgImage);
   const heroBgHtml =
     bgVideo && !prefersReducedMotion
       ? `
@@ -1065,8 +1243,8 @@ function renderHeroChapter(story, chapter) {
             muted
             loop
             playsinline
-            preload="auto"
-            poster="${bgVideo.poster || bgImage}"
+            preload="metadata"
+            ${heroPoster ? `poster="${heroPoster}"` : ""}
             aria-hidden="true"
           >
             <source src="${bgVideo.src}" type="video/mp4" />
@@ -1077,7 +1255,11 @@ function renderHeroChapter(story, chapter) {
           </button>
         </div>
       `
-      : `<div class="hero-bg" style="background-image: linear-gradient(180deg, rgba(0,0,0,0.35), rgba(0,0,0,0.6)), url('${bgVideo && bgVideo.poster ? bgVideo.poster : bgImage}')"></div>`;
+      : `
+        <div class="hero-bg"${heroPoster || bgImage ? ` style="background-image: url('${heroPoster || bgImage}')"` : ""}>
+          <div class="hero-bg-overlay"></div>
+        </div>
+      `;
 
   section.innerHTML = `
     ${heroBgHtml}
@@ -1086,7 +1268,7 @@ function renderHeroChapter(story, chapter) {
       ${chapter.eyebrow ? `<p class="eyebrow">${chapter.eyebrow}</p>` : ""}
       <h1>${chapter.title}</h1>
       <p class="hero-lede">${chapter.description}</p>
-      <div class="scroll-cue">Scroll to begin<span class="scroll-cue-arrow">&#8595;</span></div>
+      <div class="scroll-cue">Scroll to begin<span class="scroll-cue-arrow" aria-hidden="true"></span></div>
     </div>
   `;
 
@@ -1151,22 +1333,24 @@ function renderChapter(story, chapter) {
   section.className = "chapter";
   section.id = chapter.id;
 
-  // The text card docks opposite whichever side panel is active for this
-  // chapter - the map if "mapPosition" is set, otherwise the media sidecar
-  // if "mediaPosition" is "left"/"right", otherwise centered ("none").
-  const dockPosition =
-    chapter.mapPosition && chapter.mapPosition !== "none"
-      ? chapter.mapPosition
-      : chapter.mediaPosition === "left" || chapter.mediaPosition === "right"
-      ? chapter.mediaPosition
-      : "none";
-  section.dataset.mapPosition = dockPosition;
+  // The map no longer docks to a side - it is a full-width band inside the
+  // chapter - so this is no longer a layout instruction. It just records
+  // whether this chapter owns the map, for CSS hooks and for reading the
+  // DOM while debugging.
+  section.dataset.mapPosition = chapter.mapPosition || "none";
 
-  // "full" media spans the whole viewport rather than docking to one side,
-  // so there is no opposite side for the card to sit in - it overlays the
-  // media instead. Flagged separately from dockPosition (which stays
-  // "none") purely so CSS can style that overlay case.
-  if (chapter.mediaPosition === "full") section.dataset.mediaFull = "true";
+  // Which side the media panel docks to for this chapter, and therefore
+  // which side the text card has to keep clear. Always set, "none"
+  // included, so the CSS can select the centred case directly instead of
+  // through a :not() chain.
+  const mediaPosition = mediaPositionFor(chapter);
+  section.dataset.mediaPosition = mediaPosition;
+
+  // "full" spans the whole viewport instead of docking to one side, so
+  // there is no opposite side for the card to sit in - it overlays the
+  // media. Flagged separately because the left/right offset rules are
+  // wrong for it and the centred "none" rules are too.
+  if (mediaPosition === "full") section.dataset.mediaFull = "true";
 
   const content = document.createElement("div");
   content.className = "chapter-content";
@@ -1184,12 +1368,6 @@ function renderChapter(story, chapter) {
     <div class="chapter-body">${chapter.description}</div>
   `;
 
-  const mediaPosition = chapter.mediaPosition || "inline";
-  if (mediaPosition === "inline") {
-    const media = normalizeMedia(chapter);
-    if (media.length) content.appendChild(renderMediaCarousel(media));
-  }
-
   // Optional short caveat noting that the map layer/overlay for this chapter
   // is a stand-in until the client supplies real GIS data (see chapter.mapNote
   // in data/chapters.json) - distinct from the "dummy": true tag, since the
@@ -1201,7 +1379,29 @@ function renderChapter(story, chapter) {
     content.appendChild(note);
   }
 
-  section.appendChild(content);
+  // No media is built into the section. Every chapter's images and video
+  // live in the one docked #media-sidecar panel, which placeMediaForChapter()
+  // fills on scroll - so a chapter renders as text only, and the pictures
+  // are swapped in behind/beside it as the reader arrives.
+  //
+  // Map chapters additionally get a full-width band above the text for the
+  // shared MapLibre instance to move into (see dockMapInStage()), with the
+  // narrative underneath it, so the map never overlaps the card.
+  if (chapter.mapPosition === "left" || chapter.mapPosition === "right") {
+    section.classList.add("chapter-stacked");
+
+    const stage = document.createElement("div");
+    stage.className = "chapter-map-stage";
+    section.appendChild(stage);
+
+    const textWrap = document.createElement("div");
+    textWrap.className = "chapter-stage-text";
+    textWrap.appendChild(content);
+    section.appendChild(textWrap);
+  } else {
+    section.appendChild(content);
+  }
+
   story.appendChild(section);
 }
 
@@ -1231,17 +1431,20 @@ function renderChapters(chapters) {
   }
 }
 
-// --- Toolbar (chapter navigation) ------------------------------------------
-// Two-tier nav: a top row of section pills ("Get Oriented", "What Wildfire
-// Means Here", ...) plus, below it, one sub-row per section listing that
-// section's chapters - only the sub-row for the currently-active (or
-// last-clicked) section is visible at a time. This keeps the bar usable
-// once a story has dozens of chapters, instead of one long flat scrolling
-// row of pills - same idea as ArcGIS StoryMaps' section nav / table of
-// contents, just collapsed a level. It's inserted directly after the hero
-// section (see bootstrap()) and uses "position: sticky" in CSS, so it
-// scrolls normally underneath the hero and only locks to the top once the
-// reader scrolls past it.
+// --- Toolbar (section navigation) ------------------------------------------
+// A single row of section tabs ("Get Oriented", "What Wildfire Means Here",
+// ...), one per narrative section, plus the Block Explorer's own tab. It is
+// inserted directly after the hero section (see bootstrap()) and uses
+// "position: sticky" in CSS, so it scrolls normally underneath the hero and
+// only locks to the top once the reader scrolls past it.
+//
+// There used to be a second tier below this one listing every chapter in
+// the active section as a pill. With 46 chapters that was a lot of nav for
+// a story the reader is meant to scroll, it doubled the height of the
+// fixed chrome at the top of every screen, and showing/hiding rows of
+// different heights made the page jump under the reader. Sections are the
+// only level of the hierarchy the nav offers now; chapters are reached by
+// scrolling, which is the point of a story map.
 //
 // Section grouping is derived from each chapter's id prefix rather than a
 // hardcoded per-chapter list, so new "section1-*"/"section2-*" chapters
@@ -1306,90 +1509,58 @@ const SECTION_NAV_OVERRIDES = {
   orient: "welcome"
 };
 
-// The Block Explorer gets a pill of its own in the top row, even though it
-// is not a narrative section and owns no chapters. It's the one interactive
-// tool in the story ("go look at YOUR block"), and a reader who wants it
-// should not have to remember which narrative section it happens to sit
-// inside and scroll for it.
-//
-// It is deliberately a section pill with NO sub-row: there is nothing to
-// list underneath it, and showToolbarSection() hides every sub-row whose
-// data-section doesn't match, so passing this id through the normal path
-// collapses the second tier automatically - no special case needed there.
+// The Block Explorer gets a tab of its own, even though it is not a
+// narrative section and owns no chapters. It's the one interactive tool in
+// the story ("go look at YOUR block"), and a reader who wants it should not
+// have to remember which narrative section it happens to sit inside and
+// scroll for it. It is styled as a filled button rather than a tab (see
+// .toolbar-section-standalone) so it reads as the one thing here you DO
+// rather than one more place you can go.
 const EXPLORER_NAV_ID = "explorer";
 const EXPLORER_NAV_LABEL = "Explore Your Block";
 const EXPLORER_SECTION_EL_ID = "block-explorer";
 
-// Which narrative section the Explorer pill is slotted in after. The
-// Explorer section itself is injected into the DOM directly after
-// "section1-transition" (see renderChapters()), so putting its pill after
-// the pill for that chapter's section keeps the nav in the same order as
-// the page. Falls back to appending at the end if that section ever goes.
-const EXPLORER_NAV_AFTER_SECTION = "section1";
+// The Explorer's button used to be spliced into the section row at the
+// position matching where its section sits in the page (after "section1"),
+// on the principle that the nav should read in page order. It is now
+// pinned to the right-hand tail instead - see renderToolbar() - because
+// page order only mattered while it looked like a peer of the section
+// tabs. As a call-to-action its job is to be findable at any scroll
+// position, not to hold a place in a sequence.
 
-// Shows the sub-row for one section (hides all others) and marks its
-// section pill active - used both on section-pill click and, via
-// updateToolbar(), as the reader scrolls between sections.
+// Marks one section's tab as the current one - used both on tab click and,
+// via updateToolbar(), as the reader scrolls between sections.
 //
-// The Explorer pill owns no chapters and so matches no sub-row. Letting the
-// second tier collapse for it used to shift every following element up by the
-// sub-row's height, and that shift fed straight back into the observer that
-// caused it: the Explorer moved far enough to re-cross its own intersection
-// threshold, which switched the sub-row back on, which moved it back down -
-// an oscillation the reader saw as the page flickering. So the outgoing
-// sub-row is kept in flow and merely made invisible, which reserves exactly
-// the right height (no guessing, no wrapping edge cases) and breaks the loop.
+// Since the bar is a single row of fixed height, this can never change
+// #toolbar's height, and so can never move the page under the reader. The
+// previous two-tier version could: switching to the Explorer tab (which has
+// no chapters of its own) collapsed the second tier, which shifted the page
+// up, which moved the Explorer back across the very intersection threshold
+// that had triggered the switch - an oscillation the reader saw as flicker.
 function showToolbarSection(sectionId, toolbarEl) {
   const bar = toolbarEl || document.getElementById("toolbar");
   if (!bar) return;
   bar.querySelectorAll(".toolbar-section-item").forEach((btn) => {
     btn.classList.toggle("active", btn.dataset.section === sectionId);
   });
-
-  const rows = [...bar.querySelectorAll(".toolbar-subrow")];
-  const match = rows.find((row) => row.dataset.section === sectionId);
-
-  if (!match) {
-    // Nothing to show (the Explorer): hold the current row's height open.
-    const current = rows.find((row) => row.classList.contains("active"));
-    if (current) current.classList.add("reserved");
-    return;
-  }
-
-  rows.forEach((row) => {
-    row.classList.toggle("active", row === match);
-    row.classList.remove("reserved");
-  });
 }
 
 function renderToolbar(chapters) {
   const toolbar = document.createElement("nav");
   toolbar.id = "toolbar";
-  toolbar.setAttribute("aria-label", "Story chapters");
+  toolbar.setAttribute("aria-label", "Story sections");
 
   const { order, groups } = groupChaptersBySection(chapters);
 
-  // Build the top row from the narrative sections, then splice the Block
-  // Explorer's standalone pill in at the position matching where its
-  // section actually sits in the page.
-  const pillIds = order.slice();
-  const afterIdx = pillIds.indexOf(EXPLORER_NAV_AFTER_SECTION);
-  pillIds.splice(afterIdx === -1 ? pillIds.length : afterIdx + 1, 0, EXPLORER_NAV_ID);
-
+  // The eight narrative section tabs. These wrap to a second line on
+  // narrow screens; the tail below never does.
   const sectionsRow = document.createElement("div");
   sectionsRow.className = "toolbar-sections";
-  sectionsRow.innerHTML = pillIds
+  sectionsRow.innerHTML = order
     .map((sectionId) => {
-      const isExplorer = sectionId === EXPLORER_NAV_ID;
-      const label = isExplorer ? EXPLORER_NAV_LABEL : SECTION_LABELS[sectionId] || sectionId;
-      // The extra class is styling only (a subtle "this one is a tool, not a
-      // chapter group" treatment) - the click handler below finds it by
-      // data-section like every other pill.
-      const cls = isExplorer
-        ? "toolbar-section-item toolbar-section-standalone"
-        : "toolbar-section-item";
+      const label = SECTION_LABELS[sectionId] || sectionId;
       return `
-        <button type="button" class="${cls}" data-section="${sectionId}">
+        <button type="button" class="toolbar-section-item" data-section="${sectionId}">
           ${label}
         </button>
       `;
@@ -1397,25 +1568,32 @@ function renderToolbar(chapters) {
     .join("");
   toolbar.appendChild(sectionsRow);
 
-  order.forEach((sectionId) => {
-    const subrow = document.createElement("div");
-    subrow.className = "toolbar-subrow";
-    subrow.dataset.section = sectionId;
-    subrow.innerHTML = groups[sectionId]
-      .map(
-        (chapter) => `
-          <button type="button" class="toolbar-item" data-target="${chapter.id}">
-            ${chapter.navLabel || chapter.title}
-          </button>
-        `
-      )
-      .join("");
-    toolbar.appendChild(subrow);
-  });
+  // The Explorer button and the theme picker are a separate, fixed-width
+  // tail rather than two more items at the end of the wrapping row. The
+  // eight section labels plus the Explorer plus four theme swatches do not
+  // fit on one line at any ordinary desktop width, so when they shared a
+  // row the Explorer was whichever happened to land last - sometimes
+  // alone on a second line, sometimes pushed off the end. Pinned here it
+  // is on screen at every width, which is the entire point of giving it a
+  // call-to-action treatment in the first place.
+  const tail = document.createElement("div");
+  tail.className = "toolbar-tail";
 
-  toolbar.querySelectorAll(".toolbar-item").forEach((btn) => {
-    btn.addEventListener("click", () => scrollToChapter(btn.dataset.target));
-  });
+  const explorerBtn = document.createElement("button");
+  explorerBtn.type = "button";
+  // Keeps the class the click handler and showToolbarSection() look for,
+  // so the Explorer still participates in active-state tracking exactly
+  // like a section tab - it just isn't drawn like one.
+  explorerBtn.className = "toolbar-section-item toolbar-section-standalone";
+  explorerBtn.dataset.section = EXPLORER_NAV_ID;
+  // The dot is decorative; aria-hidden keeps it out of the accessible
+  // name, which stays just the label.
+  explorerBtn.innerHTML =
+    '<span class="toolbar-standalone-dot" aria-hidden="true"></span>' +
+    `<span class="toolbar-standalone-label">${EXPLORER_NAV_LABEL}</span>`;
+  tail.appendChild(explorerBtn);
+
+  toolbar.appendChild(tail);
 
   toolbar.querySelectorAll(".toolbar-section-item").forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -1438,17 +1616,57 @@ function renderToolbar(chapters) {
     });
   });
 
-  // Default to the first section's sub-row visible before any scrolling.
+  const themePicker = renderThemePicker();
+  if (themePicker) tail.appendChild(themePicker);
+
+  // Mark the first section current before any scrolling has happened.
   if (order.length) showToolbarSection(order[0], toolbar);
 
   return toolbar;
 }
 
-function updateToolbar(activeChapterId, chapters) {
-  document.querySelectorAll(".toolbar-item").forEach((btn) => {
-    btn.classList.toggle("active", btn.dataset.target === activeChapterId);
+// Theme picker - a small swatch group pinned to the end of the section row.
+// Returns null when only one theme is registered, so the control simply
+// doesn't appear if the registry is ever trimmed back to a single palette.
+function renderThemePicker() {
+  const names = Object.keys(THEMES);
+  if (names.length < 2) return null;
+
+  const wrap = document.createElement("div");
+  wrap.className = "theme-picker";
+  wrap.setAttribute("role", "radiogroup");
+  wrap.setAttribute("aria-label", "Colour theme");
+
+  names.forEach((name) => {
+    const theme = THEMES[name];
+    const colors = theme.colors || {};
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "theme-option";
+    btn.dataset.theme = name;
+    btn.setAttribute("role", "radio");
+    btn.setAttribute("aria-checked", String(name === activeThemeName));
+    btn.title = theme.label || name;
+    btn.setAttribute("aria-label", `${theme.label || name} theme`);
+    if (name === activeThemeName) btn.classList.add("active");
+    // Three stacked bands stand in for the palette, so the choice is legible
+    // at swatch size without spelling out five hex codes.
+    btn.innerHTML = `
+      <span class="theme-swatch">
+        <span style="background:${colors.primary}"></span>
+        <span style="background:${colors.secondary}"></span>
+        <span style="background:${colors.accent}"></span>
+      </span>
+      <span class="theme-option-label">${theme.label || name}</span>
+    `;
+    btn.addEventListener("click", () => setActiveTheme(name));
+    wrap.appendChild(btn);
   });
 
+  return wrap;
+}
+
+function updateToolbar(activeChapterId, chapters) {
   const activeChapter = chapters.find((c) => c.id === activeChapterId);
   if (activeChapter) {
     showToolbarSection(sectionIdFor(activeChapter));
@@ -1796,27 +2014,23 @@ function updateLegend(activeLayers) {
 }
 
 // --- Media sidecar ----------------------------------------------------
-// Docks a media carousel to the left/right half of the viewport, the same
-// way the map docks (see placeMapForChapter()) - a chapter picks ONE of the
-// two side panels via "mapPosition" or "mediaPosition", never both.
+// Fills and docks #media-sidecar for the active chapter: a panel pinned to
+// the viewport that holds that chapter's carousel while the reader is in
+// it, and swaps its contents as they move on. Which side it takes, if any,
+// comes from mediaPositionFor() - see there for the values.
 //
 // Tracks whichever side the panel was docked to for the previously-active
-// chapter (mirrors lastMapDockPosition below), so a content swap only gets
-// the extra crossfade treatment when the panel itself stays put - if it's
-// appearing/disappearing/switching sides, its own opacity transition (see
-// body.media-pos-* in CSS) already makes that change smooth.
+// chapter, so a content swap only gets the extra crossfade treatment when
+// the panel itself stays put - if it's appearing, disappearing or switching
+// sides, its own opacity transition (see body.media-pos-* in the CSS)
+// already makes that change smooth.
 let lastMediaDockPosition = null;
 
 function placeMediaForChapter(chapter) {
   const sidecar = document.getElementById("media-sidecar");
   if (!sidecar) return;
 
-  const position =
-    chapter.mediaPosition === "left" ||
-    chapter.mediaPosition === "right" ||
-    chapter.mediaPosition === "full"
-      ? chapter.mediaPosition
-      : "none";
+  const position = mediaPositionFor(chapter);
 
   document.body.classList.remove(
     "media-pos-left",
@@ -2233,6 +2447,7 @@ function initExplorerMap() {
     // map would fight page scroll. Custom zoom buttons cover zooming.
     scrollZoom: false
   });
+  explorerMapInstance = map;
 
   document.getElementById("explorer-home-btn")?.addEventListener("click", () => resetExplorer(map));
   document.getElementById("explorer-zoom-in-btn")?.addEventListener("click", () => map.zoomIn());
@@ -2316,11 +2531,7 @@ function initExplorerMap() {
           type: "line",
           source: "explorer-blocks",
           paint: {
-            "line-color": [
-              "case",
-              ["boolean", ["feature-state", "selected"], false], "#e67e22",
-              "#2c3e91"
-            ],
+            "line-color": explorerBlockLineColor(),
             "line-width": [
               "case",
               ["boolean", ["feature-state", "selected"], false], 3,
@@ -2366,7 +2577,7 @@ function initExplorerMap() {
             "text-ignore-placement": true
           },
           paint: {
-            "text-color": "#1c1c1c",
+            "text-color": themeColor("dark", "#1c1c1c"),
             "text-halo-color": "#ffffff",
             "text-halo-width": 1.2
           }
@@ -2485,7 +2696,7 @@ function addExplorerThematicLayers(map) {
     },
     paint: {
       "text-color": "#5c4826",
-      "text-halo-color": "#fdf6f0",
+      "text-halo-color": themeColor("light", "#fdf6f0"),
       "text-halo-width": 1.4
     }
   });
@@ -2518,13 +2729,16 @@ function addExplorerThematicLayers(map) {
 //    MapLibre instance + five GeoJSON fetches on every page load regardless
 //    of whether the reader ever reaches it.
 //
-// 2. Marks the section as "on screen" (body.explorer-active) while it owns
-//    the viewport. The Explorer is a plain in-flow section, not a .chapter,
-//    so setupScrollTriggers()' observer never fires for it - without this
-//    the docked story map, its fixed legend and the wind arrows would all
-//    stay frozen in whatever state the PREVIOUS chapter left them, floating
-//    on top of this section and describing layers that aren't on this map.
-//    See body.explorer-active in css/style.css.
+// 2. Lights up the Explorer's nav pill while the section owns the viewport.
+//    It is a plain in-flow section, not a .chapter, so setupScrollTriggers()'
+//    observer never fires for it and updateToolbar() never reaches it.
+//
+//    It also sets body.explorer-active, which hides the docked media panel.
+//    The story map and its legend take care of themselves - they ride in
+//    their own chapter's band and have scrolled away by the time the reader
+//    gets here - but the sidecar is pinned to the viewport, so without this
+//    it would hang over the Explorer still showing the last chapter's
+//    photograph.
 function initExplorerObserver() {
   const section = document.getElementById("block-explorer");
   if (!section) return;
@@ -2545,13 +2759,15 @@ function initExplorerObserver() {
   const activeObserver = new IntersectionObserver(
     (entries) => {
       entries.forEach((entry) => {
-        document.body.classList.toggle("explorer-active", entry.isIntersecting);
-        // Light up the Explorer's own nav pill while the reader is in it.
-        // updateToolbar() can't do this - it's driven by the .chapter
-        // observer and the Explorer isn't a chapter - and scrolling back
+        // The nav pill only has to be claimed on the way in: scrolling back
         // out hands control straight back, because the next chapter to
-        // cross that observer's threshold calls updateToolbar() itself.
+        // cross the main observer's threshold calls updateToolbar(), which
+        // re-marks its own section pill.
         if (entry.isIntersecting) showToolbarSection(EXPLORER_NAV_ID);
+        // The sidecar, by contrast, has to be released explicitly - nothing
+        // else will turn it back on, because placeMediaForChapter() only
+        // runs when a CHAPTER activates and this section is not one.
+        document.body.classList.toggle("explorer-active", entry.isIntersecting);
       });
     },
     { threshold: 0.35 }
@@ -2622,6 +2838,18 @@ function initMapControls(map, chapters, layerBounds) {
 
 // --- Map --------------------------------------------------------------
 function initMap(chapters, layerBounds) {
+  // Park the map in the first map chapter's stage before MapLibre measures
+  // the container. #map is absolutely positioned and takes its size from
+  // whichever stage it is in, so anywhere else it is a zero-height box -
+  // MapLibre would size its canvas to nothing and need a resize() to
+  // recover.
+  const firstMapChapter = chapters.find(
+    (c) => c.mapPosition === "left" || c.mapPosition === "right"
+  );
+  if (firstMapChapter) {
+    dockMapInStage(document.getElementById("map"), firstMapChapter.id);
+  }
+
   const map = new maplibregl.Map({
     container: "map",
     // Free, no-API-key vector basemap (CARTO Positron). Swap for any other
@@ -2641,6 +2869,16 @@ function initMap(chapters, layerBounds) {
   mapInstance = map;
 
   initMapControls(map, chapters, layerBounds);
+
+  // Wired up here rather than inside map.on("load") below. Docking, the
+  // legend and the toolbar are driven by scroll, not by the map, and "load"
+  // only fires after MapLibre has rendered a frame - so anything that stops
+  // that frame (no WebGL, a blocked tile CDN, a tab that never gets a
+  // rAF callback) used to cost the reader all 46 chapters, not just the map:
+  // body never got a map-pos-* class, so #map stayed at opacity 0 and the
+  // media sidecar never docked. Every layer-touching call downstream is
+  // already gated on mapLayersReady, so running early is safe.
+  setupScrollTriggers(map, chapters, layerBounds);
 
   map.on("load", () => {
     // Marin County boundary (macro scale) - real County GIS data, converted
@@ -2860,7 +3098,7 @@ function initMap(chapters, layerBounds) {
       },
       paint: {
         "text-color": "#5c4826",
-        "text-halo-color": "#fdf6f0",
+        "text-halo-color": themeColor("light", "#fdf6f0"),
         "text-halo-width": 1.4
       }
     });
@@ -2900,153 +3138,222 @@ function initMap(chapters, layerBounds) {
     buildWindArrows(map, layerBounds.homestead);
 
     // Both after the addLayer calls above, because both inspect what actually
-    // got added, and both before mapLayersReady flips - setupScrollTriggers()
-    // immediately activates the first chapter off LEGEND_LAYER_IDS.
+    // got added, and both before mapLayersReady flips - applyChapterToMap()
+    // below reads layer state off LEGEND_LAYER_IDS.
     resolveVegetationLayerIds(map);
     checkVegetationRampAgrees(extractRampColors(VEGETATION_RAMP_NORMAL));
 
     mapLayersReady = true;
-    setupScrollTriggers(map, chapters, layerBounds);
+
+    // Scroll triggers have been live since before the style finished, so the
+    // chapter the reader is on already set its layer state once - against a
+    // map that had no layers yet, where every call was a no-op. Replay it.
+    const current = chapters.find((c) => c.id === currentChapterId) || chapters[0];
+    applyChapterToMap(map, current);
+    flyToChapter(map, current, layerBounds, 0);
   });
 
   return map;
 }
 
-// Matches the CSS transition duration on #map's left/width (see style.css)
-// - used to know when it's safe to re-measure the container after a dock
-// change, see placeMapForChapter()/setupScrollTriggers() below.
-const MAP_DOCK_TRANSITION_MS = 500;
+// Moves the single shared MapLibre instance into one chapter's map stage.
+//
+// Ten chapters each show a full-width map band, but there is still only one
+// WebGL context, so the element has to travel between their stages. That is
+// invisible only because of the layout invariant in style.css: every
+// .chapter-stage-text reserves at least 100vh beneath its stage, so two
+// stages are never on screen at the same time and the stage being left has
+// always scrolled past before the next one is reached.
+//
+// Moving a <canvas> between parents does not disturb its WebGL context, so
+// this needs no re-initialisation - just a resize(), since the stage it
+// lands in may be a different height than the one it left (it is not, at a
+// fixed viewport, but it is after a rotate/resize).
+function dockMapInStage(container, chapterId) {
+  const section = document.getElementById(chapterId);
+  const stage = section && section.querySelector(".chapter-map-stage");
+  if (!stage || stage === container.parentElement) return;
 
-// Tracks whichever side the map was docked to for the previously-active
-// chapter, so we only wait out the CSS width transition when the dock
-// position is actually changing (not on every scroll).
-let lastMapDockPosition = null;
+  stage.appendChild(container);
+}
 
-// Docks the single shared full-screen map to the left half, right half, or
-// hides it entirely, based on the currently active chapter's "mapPosition".
-// This is pure CSS (see body.map-pos-* rules in style.css) - the map never
-// moves in the DOM, so no reparenting/resize-glitch handling is needed.
-// Returns true if the dock position actually changed (and so the container
-// is about to animate to a new width).
+// Shows or hides the map for the active chapter, and makes sure it is
+// sitting in that chapter's stage before it is shown.
 function placeMapForChapter(map, chapter) {
   const position = chapter.mapPosition || "none";
-  const changed = lastMapDockPosition !== position;
-  lastMapDockPosition = position;
 
   document.body.classList.remove("map-pos-left", "map-pos-right", "map-pos-none");
   document.body.classList.add(`map-pos-${position}`);
 
-  // Nudge MapLibre to recompute its canvas size for whatever the container's
-  // size is right now (immediately useful when the dock side didn't change).
+  // Left where it is on a chapter with no map of its own: it is invisible
+  // (body.map-pos-none) and parked in a stage far off screen, so moving it
+  // would only cost a needless resize on the way past.
+  if (position !== "none") dockMapInStage(map.getContainer(), chapter.id);
+
   map.resize();
-  return changed;
+}
+
+// Chapter-scroll is the "authoritative" layer state - it always wins over
+// whatever a reader manually toggled in the legend while they were on the
+// previous chapter, so the narrative never gets stuck showing or hiding a
+// layer the new chapter didn't ask for.
+function applyChapterToMap(map, chapter) {
+  Object.keys(LEGEND_LAYER_IDS).forEach((key) => {
+    setMapLayerVisibility(key, Boolean(chapter.layers[key]));
+  });
+  updateHomesteadBoundaryStyle(map, chapter);
+  updateThematicLayerStyle(map, chapter);
+  updateWindIndicator(chapter);
 }
 
 function setupScrollTriggers(map, chapters, layerBounds) {
-  // Bumped on every chapter change so a delayed fitBounds() from a chapter
-  // the reader has already scrolled past never lands after a newer one.
-  let flyToken = 0;
+  const activate = (chapter) => {
+    currentChapterId = chapter.id;
+    placeMapForChapter(map, chapter);
+    placeMediaForChapter(chapter);
+    flyToChapter(map, chapter, layerBounds);
+    applyChapterToMap(map, chapter);
+    updateLegend(chapter.layers);
+    updateToolbar(chapter.id, chapters);
+  };
+
+  // Going fullscreen hides the browser's own chrome, so the viewport gets
+  // taller and every chapter's intersection ratio is recomputed - which
+  // pushes a NEIGHBOURING chapter past its threshold and silently
+  // re-activates it. That was the "fullscreen shows the previous map" bug:
+  // the camera flew to the wrong chapter and its layers (wind arrows and
+  // their key included) were switched off, all while the reader was
+  // staring at the expanded map.
+  //
+  // Nothing is scrolling while a map is fullscreen, so there is no
+  // legitimate chapter change to process - freeze until we exit.
+  const onIntersect = (resolve) => (entries) => {
+    if (document.fullscreenElement) return;
+    entries.forEach((entry) => {
+      if (!entry.isIntersecting) return;
+      const chapter = resolve(entry.target);
+      if (chapter) activate(chapter);
+    });
+  };
+
+  const byId = (id) => chapters.find((c) => c.id === id);
+
+  // A map chapter is driven by its stage, not by the section. The section
+  // runs ~190vh (map band + a full screen of narrative), so it only reaches
+  // a 0.5 ratio once the stage has climbed most of the way up the screen -
+  // the reader would have watched an empty stage scroll past first. The
+  // stage itself crossing the bottom edge of the viewport is the moment the
+  // map has to be in place, which is exactly threshold 0 with no margin.
+  //
+  // That timing is also what keeps dockMapInStage()'s move off screen: with
+  // 100vh of text between stages, a stage touching the bottom edge means
+  // the previous one cleared the top edge a moment ago.
+  const stageObserver = new IntersectionObserver(
+    onIntersect((el) => {
+      const section = el.closest(".chapter");
+      return section && byId(section.id);
+    }),
+    { threshold: 0 }
+  );
+  document
+    .querySelectorAll(".chapter-map-stage")
+    .forEach((el) => stageObserver.observe(el));
+
+  // Everything else is roughly a screen tall and has no stage to key off,
+  // so it stays on the original "half of it is showing" rule. Stacked
+  // chapters are excluded rather than observed by both: a section fires on
+  // the way DOWN through 0.5 as well as up, which would let a chapter the
+  // reader had already left re-claim the map from the one they were
+  // entering.
+  const observer = new IntersectionObserver(
+    onIntersect((el) => byId(el.id)),
+    { threshold: 0.5 }
+  );
+  document
+    .querySelectorAll(".chapter:not(.chapter-stacked)")
+    .forEach((el) => observer.observe(el));
+
+  setupFooterRelease();
+  setupMapStageGuard();
+}
+
+// --- Map stage guard ------------------------------------------------------
+// The two big visual elements now live in different coordinate systems: the
+// map is a full-width band IN the page, the media sidecar is pinned to the
+// VIEWPORT. On a chapter that has both, the sidecar would be sitting over
+// the right-hand 58% of the map for as long as the band is on screen.
+//
+// Hiding it behind the map is not an option: .chapter-map-stage is
+// deliberately transparent so the page shows through the --map-frame-pad
+// inset that makes the map read as a framed exhibit. The sidecar would show
+// through that gap, as a band of photograph running around the map's frame.
+//
+// So the sidecar yields. While any map stage is intersecting the viewport,
+// body.map-stage-onscreen fades it out; scrolling on past the band into the
+// chapter's narrative brings it back beside the text. That also gives the
+// reader the two things in sequence - here is the ground, now here is the
+// photograph of it - instead of making them compete for one screen.
+//
+// Counted rather than toggled from a single entry: a short stage and a tall
+// window can put two stages on screen at once, and a plain boolean toggle
+// would let the one leaving switch the class back off while the one
+// arriving still needs it.
+function setupMapStageGuard() {
+  const stages = document.querySelectorAll(".chapter-map-stage");
+  if (!stages.length) return;
+
+  const onScreen = new Set();
 
   const observer = new IntersectionObserver(
     (entries) => {
-      // Going fullscreen hides the browser's own chrome, so the viewport
-      // gets taller and every chapter's intersection ratio is recomputed -
-      // which pushes a NEIGHBOURING chapter past the 0.5 threshold and
-      // silently re-activates it. That was the "fullscreen shows the
-      // previous map" bug: the camera flew to the wrong chapter and its
-      // layers (wind arrows and their key included) were switched off,
-      // all while the reader was staring at the expanded map.
-      //
-      // Nothing is scrolling while a map is fullscreen, so there is no
-      // legitimate chapter change to process here - freeze until we exit.
-      if (document.fullscreenElement) return;
-
       entries.forEach((entry) => {
-        if (!entry.isIntersecting) return;
-        const chapter = chapters.find((c) => c.id === entry.target.id);
-        if (!chapter) return;
-
-        currentChapterId = chapter.id;
-        const token = ++flyToken;
-
-        const dockChanging = placeMapForChapter(map, chapter);
-        placeMediaForChapter(chapter);
-
-        if (dockChanging) {
-          // The map's on-screen width is mid-transition (CSS), so fitBounds()
-          // would frame against the wrong (pre-transition) canvas size if run
-          // now. Wait for the transition to finish, resize the canvas to its
-          // real final size, then frame the camera.
-          window.setTimeout(() => {
-            if (token !== flyToken) return;
-            map.resize();
-            flyToChapter(map, chapter, layerBounds);
-          }, MAP_DOCK_TRANSITION_MS);
-        } else {
-          flyToChapter(map, chapter, layerBounds);
-        }
-
-        // Chapter-scroll is the "authoritative" layer state - it always wins
-        // over whatever a reader manually toggled in the legend while they
-        // were on the previous chapter, so the narrative never gets stuck
-        // showing/hiding a layer the new chapter didn't ask for.
-        Object.keys(LEGEND_LAYER_IDS).forEach((key) => {
-          setMapLayerVisibility(key, Boolean(chapter.layers[key]));
-        });
-        updateHomesteadBoundaryStyle(map, chapter);
-        updateThematicLayerStyle(map, chapter);
-        updateWindIndicator(chapter);
-
-        updateLegend(chapter.layers);
-        updateToolbar(chapter.id, chapters);
+        if (entry.isIntersecting) onScreen.add(entry.target);
+        else onScreen.delete(entry.target);
       });
+      document.body.classList.toggle("map-stage-onscreen", onScreen.size > 0);
     },
-    { threshold: 0.5 }
+    { threshold: 0 }
   );
 
-  document.querySelectorAll(".chapter").forEach((el) => observer.observe(el));
-
-  setupFooterRelease();
+  stages.forEach((el) => observer.observe(el));
 }
 
 // --- Footer release -------------------------------------------------------
-// #map and #media-sidecar are position:fixed so they stay pinned to the
-// viewport while the reader scrolls through chapters - that's the whole
-// point of the docked-panel effect. But it means that once the reader
-// scrolls past the last chapter, the panel would stay glued to the
-// viewport and the footer would have to slide up *over* it to become
-// visible (a "curtain" effect), rather than the footer simply appearing
-// after it like normal content.
+// #media-sidecar is position:fixed so it stays pinned to the viewport while
+// the reader scrolls through chapters - that's the whole point of the
+// docked-panel effect. But it means that once the reader scrolls past the
+// last chapter, the panel would stay glued to the viewport and the footer
+// would have to slide up *over* it to become visible (a "curtain" effect),
+// rather than the footer simply appearing after it like normal content.
 //
 // Instead, right as the footer is about to enter the viewport, "release"
-// whichever panel is currently docked: switch it from fixed to absolute,
-// anchored at the exact document position that puts its bottom edge flush
-// against the footer's top edge. It keeps whatever it was showing (nothing
-// gets hidden/removed) but becomes a normal document-flow element that
-// scrolls away with the rest of the page instead of staying pinned - so
-// the footer just follows directly beneath it, like any two stacked
-// blocks. Scrolling back up above the footer re-pins it to fixed so the
-// normal chapter-driven docking resumes.
+// the panel: switch it from fixed to absolute, anchored at the exact
+// document position that puts its bottom edge flush against the footer's
+// top edge. It keeps whatever it was showing (nothing gets hidden/removed)
+// but becomes a normal document-flow element that scrolls away with the
+// rest of the page instead of staying pinned - so the footer just follows
+// directly beneath it, like any two stacked blocks. Scrolling back up above
+// the footer re-pins it to fixed so the normal chapter-driven docking
+// resumes.
+//
+// #map needs none of this: it lives inside its chapter's stage and already
+// scrolls away with the page.
 function setupFooterRelease() {
   const footer = document.getElementById("footer");
-  const panels = [document.getElementById("map"), document.getElementById("media-sidecar")].filter(Boolean);
-  if (!footer || !panels.length) return;
+  const panel = document.getElementById("media-sidecar");
+  if (!footer || !panel) return;
 
   const observer = new IntersectionObserver(
     (entries) => {
       entries.forEach((entry) => {
         if (entry.isIntersecting) {
           const footerTop = entry.boundingClientRect.top + window.scrollY;
-          panels.forEach((panel) => {
-            const height = panel.getBoundingClientRect().height;
-            panel.style.position = "absolute";
-            panel.style.top = `${footerTop - height}px`;
-          });
+          const height = panel.getBoundingClientRect().height;
+          panel.style.position = "absolute";
+          panel.style.top = `${footerTop - height}px`;
         } else {
-          panels.forEach((panel) => {
-            panel.style.position = "";
-            panel.style.top = "";
-          });
+          panel.style.position = "";
+          panel.style.top = "";
         }
       });
     },
@@ -3058,13 +3365,13 @@ function setupFooterRelease() {
 
 // --- Nav offset ---------------------------------------------------------
 // #header (fixed) and #toolbar (sticky, locks under it) together occupy the
-// top of the viewport once the reader scrolls past the hero. Everything
-// else that's fixed to the viewport - the docked #map/#media-sidecar panels
-// - needs to start below that combined height, and chapter sections need
-// enough top clearance that their content doesn't scroll to a stop
-// underneath it. Both are driven off one CSS custom property, kept in sync
+// top of the viewport once the reader scrolls past the hero. Every chapter
+// needs enough top clearance that its content doesn't scroll to a stop
+// underneath that chrome, and scroll-margin has to match it so a nav jump
+// lands in the right place. Both read one CSS custom property, kept in sync
 // here so it never has to be hand-tuned to match the nav's actual rendered
-// height (which varies with the two-tier toolbar's content).
+// height - which still varies with the font size, the theme and how many
+// section tabs wrap onto a second line.
 function setupNavOffset(headerEl, toolbarEl) {
   if (!headerEl || !toolbarEl) return;
 
@@ -3102,7 +3409,11 @@ async function bootstrap() {
   checkOverlayGridsAgree();
 
   applySettings(config.settings);
-  applyTheme(config.theme);
+  // "themes" + "activeTheme" is the current shape; a lone legacy "theme" block
+  // still works so an older chapters.json keeps rendering.
+  THEMES = config.themes || (config.theme ? { custom: config.theme } : {});
+  activeThemeName = resolveThemeName({ themes: THEMES, activeTheme: config.activeTheme });
+  applyTheme(THEMES[activeThemeName], activeThemeName);
   LEGEND_CONFIG = config.legend;
 
   renderChapters(config.chapters);
