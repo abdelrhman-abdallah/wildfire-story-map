@@ -648,48 +648,59 @@ function updateThematicLayerStyle(map, chapter) {
 // `rotation: bearing` is aimed.
 const WIND_ARROWS_PER_SIDE = 4;
 
-// --- Flow paths -----------------------------------------------------------
-// Each scenario is a STREAMLINE, not a block of parallel chevrons: a curve
-// laid across the homestead bbox with the arrows spaced along it, each one
-// rotated to the curve's local tangent. Real wind bends around terrain, and
-// a curve is what makes the two fans read as moving air rather than as two
-// sets of identical signposts.
-//
-// A curve is written as "enters on this bearing, leaves on that one" rather
-// than as raw control points, because the bearings ARE the editorial content
-// - they are the regional geography:
+// --- Flow field -----------------------------------------------------------
+// Each scenario is a curved FLOW FIELD rather than a block of parallel
+// chevrons: its four arrows are spread right across Homestead and their
+// headings rotate progressively from one side of the valley to the other, so
+// the set reads as air bending through the terrain. The bearings are the
+// editorial content - they are the regional geography:
 //
 //   diablo   Offshore. Spills down off the Great Basin / Nevada side on a
 //            roughly SSW heading, then bends west as it drops to the coast
-//            and runs out over the Pacific. Enters ~205, leaves ~255.
+//            and runs out over the Pacific. 208 -> 252.
 //   reverse  Onshore. Comes in off the Pacific heading ENE, then bends left
 //            and straightens to very nearly due north, up the corridor
-//            toward Mill Valley. Enters ~61, leaves ~6.
+//            toward Mill Valley. 58 -> 5.
 //
 // Only the SHAPE is geographic. The arrows stay inside the homestead frame -
 // they annotate which way the air is going as it passes through here, they
 // are not a journey that begins in Nevada or ends in Mill Valley.
-//
-// `start` is normalised to the homestead bbox: [0,0] is its SW corner, [1,1]
-// its NE. Values outside 0..1 are deliberate, so a streamline looks like it
-// is passing THROUGH the valley rather than being born at its edge. The two
-// curves are placed on opposite diagonals - diablo sweeps the upper left,
-// reverse climbs the lower right - so that two contradictory wind scenarios
-// drawn at the same time never tangle with each other.
-// `reach` is the control-arm length in bbox HEIGHTS (not widths) - the
-// homestead bbox is about 1.6x wider than it is tall, so height is the
-// scarce axis and the one worth measuring against.
 const WIND_FLOWS = [
-  { side: "diablo", start: [0.58, 1.05], bearingIn: 208, bearingOut: 252, reach: 0.55 },
-  { side: "reverse", start: [0.45, -0.05], bearingIn: 58, bearingOut: 5, reach: 0.55 }
+  { side: "diablo", bearingIn: 208, bearingOut: 252 },
+  { side: "reverse", bearingIn: 58, bearingOut: 5 }
 ];
 
-// How much of the curve's total bend an arrow sweeps through during one
-// drift cycle, as a fraction. An arrow travels about one of its own lengths
-// per cycle, which is a small slice of the whole streamline, so it should
-// turn by a correspondingly small slice of the whole bend - a few degrees.
-// That bank is what keeps the motion reading as curved rather than as a
-// rigid chevron sliding down a diagonal.
+// --- The rank -------------------------------------------------------------
+// All eight arrows sit on one line across the valley, INTERLEAVED - orange,
+// blue, orange, blue - so each one has a neighbour of the other colour on
+// either side and both scenarios span the whole of Homestead instead of
+// clustering in opposite corners.
+//
+// The bearing of the rank is the load-bearing number. It is set ACROSS the
+// wind axis (the two scenarios average out to roughly a 40/220 axis, so its
+// perpendicular is about 130), never along it. That is what keeps the
+// animation clean: neighbouring arrows are offset along the rank while they
+// drift perpendicular to it in opposite directions, so a pair always slides
+// APART rather than along the rank into each other. A rank laid along the
+// wind axis would have every arrow drifting straight at its neighbour.
+//
+// 118 rather than a true 130 is the compromise the bbox forces: Homestead is
+// about 1.6x wider than it is tall, so a steeper rank cannot span the width
+// without running off the top and bottom edges. 118 still clears the blue
+// fan's mean heading by 86 degrees and the orange fan's by 112.
+//
+// Length is in bbox HEIGHTS (height being the scarce axis on a wide bbox),
+// measured about the centre of the bbox.
+const WIND_RANK_BEARING = 118;
+const WIND_RANK_LENGTH = 1.63;
+const WIND_RANK_CENTER = [0.5, 0.5];
+
+// How much of the fan's total bend an arrow sweeps through during one drift
+// cycle, as a fraction. An arrow travels about one of its own lengths per
+// cycle, which is a small slice of the whole field, so it should turn by a
+// correspondingly small slice of the whole bend - a few degrees. That bank is
+// what keeps the motion reading as curved rather than as a rigid chevron
+// sliding down a diagonal.
 const WIND_CURL_SHARE = 0.14;
 
 // --- Drift animation timing ---------------------------------------------
@@ -714,7 +725,39 @@ const WIND_CURL_SHARE = 0.14;
 const WIND_DRIFT_BASE_S = 3.6;
 const WIND_DRIFT_SPREAD_S = 0.22;
 
+// --- Crowding guard -------------------------------------------------------
+// WIND_ARROWS_PER_SIDE is the number we WANT, not the number we always get.
+// The arrows are a fixed pixel size (they are UI, not geography), but the
+// rank they sit on is geographic, so it shrinks with the map panel: on a
+// 1440px window the rank is ~866px long and neighbours sit ~124px apart,
+// while on a 375px phone the same rank is ~190px and the gap collapses to
+// ~27px. At that spacing eight arrows do not merely look tight - each one
+// travels about one of its own lengths per drift cycle, so they pass clean
+// through each other, which is exactly what the interleave exists to
+// prevent.
+//
+// So the count is derived from the rank's measured on-screen length rather
+// than assumed. 92px is the smallest neighbour gap that still clears, and
+// it was measured, not guessed: a swept simulation of the full drift cycle
+// (every pair, every phase, arrows treated as their full bounding boxes)
+// puts the overlap threshold at ~88px, so 92 is that plus a little air.
+//
+// The practical effect is a graceful ladder rather than a mobile hack -
+// 4 per side above ~1020px wide, then 2, then a single pair on a phone.
+// Both scenarios stay represented and interleaved at every step.
+const WIND_MIN_ARROW_GAP_PX = 92;
+
+// The wind chapter frames the homestead layer through flyToChapter(), which
+// falls back to this padding when a chapter doesn't override it. Shared so
+// the crowding guard measures the rank at the same camera the reader gets -
+// if these two ever disagreed the guard would be sizing for a view that
+// never appears.
+const MAP_FIT_PADDING = 60;
+const WIND_FIT_PADDING = MAP_FIT_PADDING;
+
 const windArrowElements = [];
+const windArrowMarkers = [];
+let windArrowsPerSide = 0;
 
 function windArrowSvg(gradientId) {
   return `<svg viewBox="0 0 34 62" xmlns="http://www.w3.org/2000/svg">
@@ -731,11 +774,10 @@ function windArrowSvg(gradientId) {
 // Normalised bbox space is NOT square on the ground: at Marin's latitude a
 // degree of longitude is only ~0.79 of a degree of latitude, and the bbox
 // itself is not 1:1 either. `aspect` is the bbox's true ground width over its
-// true ground height, and it is what lets us author the curves in honest
-// compass bearings and still have each arrow look tangent to its curve once
-// MapLibre has projected it. Without this correction every bearing would be
-// sheared by the bbox's proportions and the arrows would visibly not line up
-// with the path they sit on.
+// true ground height, and it is what lets WIND_RANK_BEARING be an honest
+// compass bearing. Without this correction the rank would be sheared by the
+// bbox's proportions and would no longer sit across the wind axis - which is
+// the one property the whole interleaved layout depends on.
 function windBboxAspect(bounds) {
   const [[west, south], [east, north]] = bounds;
   const midLat = ((south + north) / 2) * (Math.PI / 180);
@@ -749,93 +791,154 @@ function windBearingStep(deg, len, aspect) {
   return [(len * Math.sin(rad)) / aspect, len * Math.cos(rad)];
 }
 
-// Quadratic Bezier control points derived from the two bearings: P1 sits one
-// `reach` along the entry heading from P0, and P2 one reach further along the
-// exit heading. Building them this way guarantees the curve's start and end
-// tangents are exactly bearingIn and bearingOut, so the authored numbers mean
-// what they say.
-function windFlowControls(flow, aspect) {
-  const [x0, y0] = flow.start;
-  const [ix, iy] = windBearingStep(flow.bearingIn, flow.reach, aspect);
-  const [ox, oy] = windBearingStep(flow.bearingOut, flow.reach, aspect);
-  const p1 = [x0 + ix, y0 + iy];
-  return [flow.start, p1, [p1[0] + ox, p1[1] + oy]];
-}
-
-// Position AND heading at t along the curve, returned together because that
-// pairing is the whole point: each arrow must point the way the air is going
-// at the exact spot it is sitting. The derivative of a quadratic Bezier is a
-// straight lerp between its two control arms, so the tangent sweeps smoothly
-// from bearingIn to bearingOut as t runs 0 -> 1.
-function windFlowSample(flow, t, bounds, aspect) {
-  const [p0, p1, p2] = windFlowControls(flow, aspect);
-  const u = 1 - t;
-  const x = u * u * p0[0] + 2 * u * t * p1[0] + t * t * p2[0];
-  const y = u * u * p0[1] + 2 * u * t * p1[1] + t * t * p2[1];
-  const dx = 2 * u * (p1[0] - p0[0]) + 2 * t * (p2[0] - p1[0]);
-  const dy = 2 * u * (p1[1] - p0[1]) + 2 * t * (p2[1] - p1[1]);
-
+// Where slot `u` (0 at one end of the rank, 1 at the other) falls, as real
+// coordinates. The rank is measured out from the centre of the bbox along
+// WIND_RANK_BEARING, so u - 0.5 is the signed distance from the middle.
+function windRankLngLat(u, bounds, aspect) {
+  const [dx, dy] = windBearingStep(
+    WIND_RANK_BEARING,
+    WIND_RANK_LENGTH * (u - 0.5),
+    aspect
+  );
   const [[west, south], [east, north]] = bounds;
-  return {
-    lngLat: [west + x * (east - west), south + y * (north - south)],
-    // dx is un-sheared back into ground units before being read as a
-    // bearing, the exact inverse of what windBearingStep() applied.
-    bearing: (((Math.atan2(dx * aspect, dy) * 180) / Math.PI) + 360) % 360
-  };
+  return [
+    west + (WIND_RANK_CENTER[0] + dx) * (east - west),
+    south + (WIND_RANK_CENTER[1] + dy) * (north - south)
+  ];
 }
 
-function buildWindArrows(map, bounds) {
+// Web-Mercator unit square (0..1 both axes), which is what a zoom level
+// scales by 512 * 2^z to get pixels.
+function windMercator(lngLat) {
+  const [lng, lat] = lngLat;
+  const s = Math.sin((lat * Math.PI) / 180);
+  return [
+    (lng + 180) / 360,
+    0.5 - Math.log((1 + s) / (1 - s)) / (4 * Math.PI)
+  ];
+}
+
+// How long the rank is, in pixels, AT THE CAMERA THE WIND CHAPTER WILL GET.
+// Deliberately not map.project() against the live camera: the arrows are
+// built once at start-up, when the map is still parked in the first chapter
+// (a county-wide overview), so projecting then would measure the rank at a
+// zoom it is never actually seen at and conclude that nothing fits.
+// cameraForBounds answers the question that matters - what will this panel
+// look like once it has flown here - and it reads the current canvas size,
+// so it tracks the panel through resizes and fullscreen for free.
+function windRankPixels(map, bounds, aspect) {
+  const cam = map.cameraForBounds(bounds, { padding: WIND_FIT_PADDING });
+  if (!cam) return 0;
+  const a = windMercator(windRankLngLat(0, bounds, aspect));
+  const b = windMercator(windRankLngLat(1, bounds, aspect));
+  return Math.hypot(b[0] - a[0], b[1] - a[1]) * 512 * Math.pow(2, cam.zoom);
+}
+
+// How many arrows per scenario that length can hold without the drift
+// cycles running through each other.
+function windArrowsThatFit(map, bounds, aspect) {
+  const rankPx = windRankPixels(map, bounds, aspect);
+  if (!rankPx) return WIND_ARROWS_PER_SIDE;
+
+  // slots = 2 * perSide and the slots are half-step inset, so the neighbour
+  // gap is rankPx / slots. Solving gap >= WIND_MIN_ARROW_GAP_PX for perSide.
+  const fits = Math.floor(rankPx / (2 * WIND_MIN_ARROW_GAP_PX));
+  return Math.max(1, Math.min(WIND_ARROWS_PER_SIDE, fits));
+}
+
+function buildWindArrows(map, bounds, perSide) {
   if (!bounds) return;
 
   const aspect = windBboxAspect(bounds);
+  if (!perSide) perSide = windArrowsThatFit(map, bounds, aspect);
 
-  WIND_FLOWS.forEach((flow) => {
-    // Signed, so an arrow banks the way its own streamline actually turns:
-    // diablo bends right (205 -> 255), reverse bends left (61 -> 6).
+  // Rebuilt rather than mutated on resize, so clear out the previous set
+  // first. Markers must be removed through MapLibre, not just dropped from
+  // the array - it keeps its own list and would go on repositioning
+  // orphaned elements on every render.
+  windArrowMarkers.splice(0).forEach((m) => m.remove());
+  windArrowElements.length = 0;
+  windArrowsPerSide = perSide;
+
+  const slots = WIND_FLOWS.length * perSide;
+
+  // One pass over the whole rank, alternating colour every slot. Walking the
+  // slots rather than looping per fan is what produces the interleave: slot
+  // 0 is orange, 1 blue, 2 orange, and so on, so no arrow ever has a
+  // same-colour immediate neighbour.
+  for (let slot = 0; slot < slots; slot++) {
+    const flow = WIND_FLOWS[slot % WIND_FLOWS.length];
+    const i = Math.floor(slot / WIND_FLOWS.length);
+
+    // Half-step in from each end, so the rank is spread across the valley
+    // rather than bunched at its tips.
+    const u = (slot + 0.5) / slots;
+    const lngLat = windRankLngLat(u, bounds, aspect);
+
+    // Heading rotates with position ACROSS the valley, not with the arrow's
+    // index within its own fan - so both fans describe one continuous
+    // curving field over the same ground, which is what lets them interleave
+    // and still read as two coherent flows.
+    const bearing = flow.bearingIn + u * (flow.bearingOut - flow.bearingIn);
+
+    // Signed, so an arrow banks the way its own fan actually turns: diablo
+    // bends right (208 -> 252), reverse bends left (58 -> 5).
     const curl = (flow.bearingOut - flow.bearingIn) * WIND_CURL_SHARE;
 
-    for (let i = 0; i < WIND_ARROWS_PER_SIDE; i++) {
-      // Half-step in from each end, so the fan is spread along the curve
-      // rather than bunched at its tips.
-      const t = (i + 0.5) / WIND_ARROWS_PER_SIDE;
-      const { lngLat, bearing } = windFlowSample(flow, t, bounds, aspect);
+    const el = document.createElement("div");
+    el.className = `wind-arrow wind-arrow-${flow.side}`;
+    el.innerHTML = windArrowSvg(`wind-grad-${flow.side}-${i}`);
 
-      const el = document.createElement("div");
-      el.className = `wind-arrow wind-arrow-${flow.side}`;
-      el.innerHTML = windArrowSvg(`wind-grad-${flow.side}-${i}`);
+    // The two fans are half a step out of phase with each other as well as
+    // within themselves; syncing them would read as one pulsing graphic
+    // rather than two independent wind scenarios. The quarter/three-quarter
+    // offsets also keep every phase off zero - a phase of exactly 0 is the
+    // one value that defeats the negative delay, parking that arrow at the
+    // 0% keyframe (opacity 0) so it alone fades up from nothing while its
+    // neighbours are already in flight.
+    const duration = WIND_DRIFT_BASE_S + i * WIND_DRIFT_SPREAD_S;
+    const phase = (i + (flow.side === "reverse" ? 0.75 : 0.25)) / perSide;
+    el.style.setProperty("--wind-duration", `${duration.toFixed(2)}s`);
+    el.style.setProperty("--wind-delay", `${(-phase * duration).toFixed(2)}s`);
 
-      // The two fans are half a step out of phase with each other as well
-      // as within themselves - they sit on opposite sides of the valley
-      // pointing opposite ways, and syncing them would read as one pulsing
-      // graphic rather than two independent wind scenarios.
-      // The quarter/three-quarter offsets keep the two fans half a step
-      // apart AND keep every phase off zero - a phase of exactly 0 is the
-      // one value that defeats the negative delay, parking that arrow at
-      // the 0% keyframe (opacity 0) so it alone fades up from nothing while
-      // its neighbours are already in flight.
-      const duration = WIND_DRIFT_BASE_S + i * WIND_DRIFT_SPREAD_S;
-      const phase = (i + (flow.side === "reverse" ? 0.75 : 0.25)) / WIND_ARROWS_PER_SIDE;
-      el.style.setProperty("--wind-duration", `${duration.toFixed(2)}s`);
-      el.style.setProperty("--wind-delay", `${(-phase * duration).toFixed(2)}s`);
+    // Straddles the arrow's static heading rather than starting from it, so
+    // the mid-point of the drift is the heading the field actually has at
+    // this spot and the bank reads as following through the turn.
+    el.style.setProperty("--wind-curl-in", `${(-curl / 2).toFixed(2)}deg`);
+    el.style.setProperty("--wind-curl-out", `${(curl / 2).toFixed(2)}deg`);
 
-      // Straddles the arrow's static tangent rather than starting from it, so
-      // the mid-point of the drift is the heading the curve actually has at
-      // this spot and the bank reads as following through the turn.
-      el.style.setProperty("--wind-curl-in", `${(-curl / 2).toFixed(2)}deg`);
-      el.style.setProperty("--wind-curl-out", `${(curl / 2).toFixed(2)}deg`);
+    const marker = new maplibregl.Marker({
+      element: el,
+      rotation: bearing,
+      rotationAlignment: "map",
+      pitchAlignment: "map"
+    })
+      .setLngLat(lngLat)
+      .addTo(map);
 
-      new maplibregl.Marker({
-        element: el,
-        rotation: bearing,
-        rotationAlignment: "map",
-        pitchAlignment: "map"
-      })
-        .setLngLat(lngLat)
-        .addTo(map);
+    windArrowMarkers.push(marker);
+    windArrowElements.push(el);
+  }
+}
 
-      windArrowElements.push(el);
-    }
-  });
+// Re-checks the crowding guard after anything that can change the map
+// panel's size, and rebuilds only when the verdict actually changes. The
+// guard on the count is what makes this cheap enough to hang off a resize
+// listener: dragging a window edge crosses the same verdict hundreds of
+// times and rebuilds on none of them.
+function syncWindArrows(map, bounds) {
+  if (!bounds || !windArrowElements.length) return;
+  const perSide = windArrowsThatFit(map, bounds, windBboxAspect(bounds));
+  if (perSide === windArrowsPerSide) return;
+
+  // The arrows are only shown on wind chapters, and a rebuild starts them
+  // hidden, so carry the current state across or they would silently
+  // vanish if the reader resized while standing in one.
+  const wasVisible = windArrowElements[0].classList.contains("visible");
+  buildWindArrows(map, bounds, perSide);
+  if (wasVisible) {
+    windArrowElements.forEach((el) => el.classList.add("visible"));
+  }
 }
 
 function updateWindIndicator(chapter) {
@@ -1239,6 +1342,31 @@ function mediaPositionFor(chapter) {
   return MEDIA_POSITIONS.includes(want) ? want : "right";
 }
 
+// A <source>'s `type` is a PROMISE the browser holds you to, not a hint: if
+// it does not recognise the type it rejects that source outright, without
+// ever fetching the file. There is no error event on the <video> when that
+// happens - you get networkState 3 (NETWORK_NO_SOURCE) and a silent blank
+// player, which is near-undebuggable from the outside.
+//
+// This is only mapped for the types that genuinely help. Anything else -
+// notably .mov - returns "" so the attribute is omitted entirely and the
+// browser sniffs the file instead. Omitting is strictly safer than guessing:
+// a .mov holding ordinary H.264 plays fine in Chrome when sniffed, but
+// declaring the honest `video/quicktime` makes Chrome refuse it. The type
+// attribute only earns its keep when there are several <source>s to choose
+// between, and here there is exactly one.
+const VIDEO_MIME_TYPES = {
+  mp4: "video/mp4",
+  m4v: "video/mp4",
+  webm: "video/webm",
+  ogv: "video/ogg"
+};
+
+function videoMimeType(src) {
+  const ext = /\.([a-z0-9]+)(?:[?#]|$)/i.exec(src || "");
+  return (ext && VIDEO_MIME_TYPES[ext[1].toLowerCase()]) || "";
+}
+
 function renderMediaItemInner(item) {
   if (item.type === "video") {
     // `youtubeUrl` is the documented field, but a URL pasted into `src` (the
@@ -1262,11 +1390,11 @@ function renderMediaItemInner(item) {
       `;
     }
     if (item.localSrc) {
+      const mime = videoMimeType(item.localSrc);
       return `
-        <video controls preload="none">
-          <source src="${item.localSrc}" type="video/quicktime" />
-          Your browser may not support inline .mov playback - swap for an
-          .mp4 if this doesn't play.
+        <video controls preload="metadata"${item.poster ? ` poster="${item.poster}"` : ""}>
+          <source src="${item.localSrc}"${mime ? ` type="${mime}"` : ""} />
+          Your browser cannot play this video inline.
         </video>
       `;
     }
@@ -2370,7 +2498,7 @@ function flyToChapter(map, chapter, layerBounds, duration = 1200) {
   const bounds = chapter.fitToLayer && layerBounds[chapter.fitToLayer];
   if (bounds) {
     map.fitBounds(bounds, {
-      padding: chapter.fitPadding || 60,
+      padding: chapter.fitPadding || MAP_FIT_PADDING,
       pitch: chapter.location.pitch || 0,
       bearing: chapter.location.bearing || 0,
       duration
@@ -3077,6 +3205,11 @@ function initMapControls(map, chapters, layerBounds) {
         const chapter = chapters.find((c) => c.id === wantedId) || chapters[0];
         currentChapterId = chapter.id;
         flyToChapter(map, chapter, layerBounds, 0);
+        // Fullscreen is the biggest single change the map panel ever makes
+        // - a phone goes from a ~340px panel to the whole screen - so it is
+        // the one moment the wind arrows are most likely to want a
+        // different count in each direction.
+        syncWindArrows(map, layerBounds.homestead);
       }, 120);
     });
   }
@@ -3382,6 +3515,21 @@ function initMap(chapters, layerBounds) {
     });
 
     buildWindArrows(map, layerBounds.homestead);
+
+    // The arrows are a fixed pixel size on a map panel that is not, so the
+    // number that fits changes with the window.
+    //
+    // Deliberately the map's own resize event, not the window's. The guard
+    // asks cameraForBounds how the panel will be framed, and that reads the
+    // CANVAS size - which MapLibre updates from its internal ResizeObserver,
+    // after the window event has already been and gone. Listening on the
+    // window measures the old canvas and concludes nothing has changed.
+    //
+    // syncWindArrows() no-ops unless the verdict actually changed, so this
+    // stays cheap while a window edge is being dragged.
+    map.on("resize", () => {
+      syncWindArrows(map, layerBounds.homestead);
+    });
 
     // Community Center, added after everything else (including the boundary
     // line and the wind arrows) so the landmark is never buried.
