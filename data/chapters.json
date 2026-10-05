@@ -36,7 +36,7 @@
       "title": "Homestead Valley",
       "items": [
         {
-          "label": "Homestead Valley — CSA 14 (469 acres)",
+          "label": "Homestead Valley - CSA 14 (469 acres)",
           "color": "#000000",
           "swatch": "line-solid"
         }
@@ -46,7 +46,7 @@
       "title": "Elevation Contours",
       "items": [
         {
-          "label": "20 ft interval — labeled every 40 ft",
+          "label": "20 ft interval - labeled every 40 ft",
           "color": "#8a6d3b",
           "swatch": "line-solid"
         }
@@ -56,35 +56,35 @@
       "title": "Elevation",
       "items": [
         {
-          "label": "9–58 ft — 35.0 ac",
+          "label": "9–58 ft - 35.0 ac",
           "color": "#F0F0F0"
         },
         {
-          "label": "58–172 ft — 109.7 ac",
+          "label": "58–172 ft - 109.7 ac",
           "color": "#D9D9D9"
         },
         {
-          "label": "172–306 ft — 142.7 ac",
+          "label": "172–306 ft - 142.7 ac",
           "color": "#BDBDBD"
         },
         {
-          "label": "306–444 ft — 109.9 ac",
+          "label": "306–444 ft - 109.9 ac",
           "color": "#969696"
         },
         {
-          "label": "444–578 ft — 52.3 ac",
+          "label": "444–578 ft - 52.3 ac",
           "color": "#737373"
         },
         {
-          "label": "578–692 ft — 14.2 ac",
+          "label": "578–692 ft - 14.2 ac",
           "color": "#525252"
         },
         {
-          "label": "692–782 ft — 4.3 ac",
+          "label": "692–782 ft - 4.3 ac",
           "color": "#353535"
         },
         {
-          "label": "782–822 ft — 0.9 ac",
+          "label": "782–822 ft - 0.9 ac",
           "color": "#1A1A1A"
         }
       ]
@@ -146,22 +146,22 @@
       "title": "Vegetation Density (NDVI)",
       "items": [
         {
-          "label": "Sparse — 78.6 ac",
+          "label": "Sparse - 78.6 ac",
           "color": "#d9f0a3",
           "zone": "(NDVI 0.41–0.55)"
         },
         {
-          "label": "Moderate — 102.3 ac",
+          "label": "Moderate - 102.3 ac",
           "color": "#78c679",
           "zone": "(NDVI 0.55–0.70)"
         },
         {
-          "label": "Dense — 106.9 ac",
+          "label": "Dense - 106.9 ac",
           "color": "#31a354",
           "zone": "(NDVI 0.70–0.82)"
         },
         {
-          "label": "Very dense — 97.8 ac",
+          "label": "Very dense - 97.8 ac",
           "color": "#006837",
           "zone": "(NDVI ≥ 0.82)"
         }
@@ -185,7 +185,7 @@
   },
   "footer": {
     "title": "Take the Next Step, Together",
-    "text": "This StoryMap is a living project — as new mapping, photos, and video come in from the community, this page will grow with them.",
+    "text": "This StoryMap is a living project - as new mapping, photos, and video come in from the community, this page will grow with them.",
     "links": [
       {
         "label": "Ember Ready Neighborhood sign-up (email the Safety Committee)",
@@ -196,7 +196,7 @@
         "url": "https://www.hvlt.org/"
       },
       {
-        "label": "HVLT — our history",
+        "label": "HVLT - our history",
         "url": "https://www.hvlt.org/history/"
       },
       {
@@ -204,23 +204,23 @@
         "url": "https://storymaps.arcgis.com/stories/a4f41c9b87a7406ebe67d0a45c68e973"
       },
       {
-        "label": "Southern Marin Fire District — wildfire preparedness (StoryMap)",
+        "label": "Southern Marin Fire District - wildfire preparedness (StoryMap)",
         "url": "https://storymaps.arcgis.com/stories/399009c0b2c7461ea34c652b9e658772"
       },
       {
-        "label": "CWPP 2025 — Southern Marin zone summaries (PDF)",
+        "label": "CWPP 2025 - Southern Marin zone summaries (PDF)",
         "url": "https://cdn.prod.website-files.com/6107823cbe8db485b50aa8f8/69f3b20b212cc8fb23aac81f_CWPP_2025_ZoneSpecificSummaries_4-29-26_Southern_Marin.pdf"
       },
       {
-        "label": "MWPA — grants for residents",
+        "label": "MWPA - grants for residents",
         "url": "https://www.marinwildfire.org/resident-info/resident-grants"
       },
       {
-        "label": "Fire Safe Marin — fire-resistant vents",
+        "label": "Fire Safe Marin - fire-resistant vents",
         "url": "https://firesafemarin.org/harden-your-home/fire-resistant-vents/"
       },
       {
-        "label": "Safer from Wildfires — California insurance discounts",
+        "label": "Safer from Wildfires - California insurance discounts",
         "url": "https://www.insurance.ca.gov/01-consumers/200-wrr/Safer-from-Wildfires.cfm"
       },
       {
@@ -232,11 +232,11 @@
         "url": "https://www.nfpa.org/education-and-research/wildfire/firewise-usa"
       },
       {
-        "label": "CAL FIRE — defensible space",
+        "label": "CAL FIRE - defensible space",
         "url": "https://www.fire.ca.gov/dspace"
       },
       {
-        "label": "CAL FIRE — home hardening",
+        "label": "CAL FIRE - home hardening",
         "url": "https://www.fire.ca.gov/home-hardening"
       },
       {
@@ -244,15 +244,15 @@
         "url": "media/Firewise%20Assessment_Homestead%20Valley_rev3_Cary%20Gloekner_102815.pdf"
       },
       {
-        "label": "MWPA — Greater Mill Valley shaded fuel break presentation (PDF)",
+        "label": "MWPA - Greater Mill Valley shaded fuel break presentation (PDF)",
         "url": "https://cdn.prod.website-files.com/6107823bbe8db473290aa8ef/687abef09882fae2ee969b50_GMVFB%20PublicPresentation_2025-06-24.pdf"
       },
       {
-        "label": "SMFD — Tamalpais / Homestead Valley shaded fuel break (PDF)",
+        "label": "SMFD - Tamalpais / Homestead Valley shaded fuel break (PDF)",
         "url": "https://www.smfd.org/home/showpublisheddocument/2671/638083478055700000"
       }
     ],
-    "credit": "Built for the Homestead Valley community with MapLibre GL JS — an open-source alternative to Esri ArcGIS StoryMaps."
+    "credit": "Built for the Homestead Valley community with MapLibre GL JS - an open-source alternative to Esri ArcGIS StoryMaps."
   },
   "chapters": [
     {
@@ -263,7 +263,7 @@
       "navLabel": "Intro",
       "eyebrow": "A StoryMap for Homestead Valley",
       "title": "Homestead Was Built By Neighbors",
-      "description": "For generations, Homestead Valley residents have worked together to preserve something unique and extraordinary — a mountain village community where unique homes, verdant forests, wind-blown ridgelines and miles of hiking trails exist side by side. All this just twenty minutes from San Francisco.",
+      "description": "For generations, Homestead Valley residents have worked together to preserve something unique and extraordinary - a mountain village community where unique homes, verdant forests, wind-blown ridgelines and miles of hiking trails exist side by side. All this just twenty minutes from San Francisco.",
       "backgroundVideo": {
         "src": "media/HV_PANORAMIC_VIDEO_1.mp4",
         "playbackRate": 2
@@ -291,13 +291,13 @@
       "dummy": false,
       "navLabel": "Built By Neighbors",
       "title": "Homestead Was Built By Neighbors",
-      "description": "<p>For generations, Homestead Valley residents have worked together to preserve something unique and extraordinary — a mountain village community where unique homes, verdant forests, wind-blown ridgelines and miles of hiking trails exist side by side.</p><div class=\"key-line\">All this just twenty minutes from San Francisco.</div><p>We live here because of our community, because of this natural setting. It is part of what makes Homestead Valley so distinctive and valuable.</p>",
+      "description": "<p>For generations, Homestead Valley residents have worked together to preserve something unique and extraordinary - a mountain village community where unique homes, verdant forests, wind-blown ridgelines and miles of hiking trails exist side by side.</p><div class=\"key-line\">All this just twenty minutes from San Francisco.</div><p>We live here because of our community, because of this natural setting. It is part of what makes Homestead Valley so distinctive and valuable.</p>",
       "media": [
         {
           "type": "image",
           "src": "media/Homestead_Fork_1.jpeg",
           "alt": "The hand-lettered HOMESTEAD sign along the roadside fence at the Fork, with the valley's giant fork sculpture beside it",
-          "caption": "The Fork — where Homestead Valley introduces itself."
+          "caption": "The Fork - where Homestead Valley introduces itself."
         },
         {
           "type": "image",
@@ -309,13 +309,13 @@
           "type": "image",
           "src": "media/Homestead_Trail_Euc_Forest.jpeg",
           "alt": "A wide panoramic view along the Homestead Trail, running beneath a mature eucalyptus forest with bark and leaf litter across the dry ground",
-          "caption": "The eucalyptus forest along the Homestead Trail — beautiful, and a heavy fuel load."
+          "caption": "The eucalyptus forest along the Homestead Trail - beautiful, and a heavy fuel load."
         },
         {
           "type": "image",
           "src": "media/HV_Nieghborhood_Panoramic_Tam.jpeg",
           "alt": "Panoramic view across a Homestead Valley neighborhood, with dry grass in the foreground, dense tree cover over the homes and Mount Tamalpais on the skyline",
-          "caption": "Homes, trees and ridgeline — and cured grass in the foreground."
+          "caption": "Homes, trees and ridgeline - and cured grass in the foreground."
         },
         {
           "type": "image",
@@ -327,7 +327,7 @@
           "type": "image",
           "src": "media/Stolte Grove Sign.png",
           "alt": "Homestead Valley Land Trust sign at Stolte Grove listing park rules, including no fires, fireworks, candles, stoves or smoking",
-          "caption": "Stolte Grove — open space the community set aside, and stewards to this day."
+          "caption": "Stolte Grove - open space the community set aside, and stewards to this day."
         }
       ],
       "mediaPosition": "right",
@@ -354,7 +354,7 @@
       "dummy": false,
       "navLabel": "It Is Also Our Risk",
       "title": "It Is Also a Big Part of Our Risk",
-      "description": "<p>The same setting that makes Homestead Valley extraordinary is a big part of our elevated wildfire risk.</p><div class=\"key-line\">Homestead pretty much defines the term W.U.I. — the wildland-urban interface.</div><p>CAL FIRE maps the hills we live in as high and very high fire hazard severity. We back onto tens of thousands of acres of open space, including untreated federal land, and our homes sit inside a forest rather than beside one.</p>",
+      "description": "<p>The same setting that makes Homestead Valley extraordinary is a big part of our elevated wildfire risk.</p><div class=\"key-line\">Homestead pretty much defines the term W.U.I. - the wildland-urban interface.</div><p>CAL FIRE maps the hills we live in as high and very high fire hazard severity. We back onto tens of thousands of acres of open space, including untreated federal land, and our homes sit inside a forest rather than beside one.</p>",
       "media": [
         {
           "type": "image",
@@ -365,7 +365,7 @@
         {
           "type": "image",
           "src": "media/WUI Definition.png",
-          "alt": "Definition of the wildland-urban interface (WUI) — the zone where homes and other development meet or intermingle with undeveloped wildland vegetation",
+          "alt": "Definition of the wildland-urban interface (WUI) - the zone where homes and other development meet or intermingle with undeveloped wildland vegetation",
           "caption": "The wildland-urban interface, defined."
         }
       ],
@@ -393,19 +393,19 @@
       "dummy": false,
       "navLabel": "It Happened Here",
       "title": "It Has Happened Here Before",
-      "description": "<p>The threat wildfire poses to life and safety here is very real, even if a catastrophic fire feels distant or abstract — <em>“something that happens to someone else.”</em></p><div class=\"key-line\">It has happened all around us. It happened here in the past. And it could happen here at any time.</div><p>In July 1929 a fire swept down off Mount Tamalpais and destroyed roughly a hundred homes on Summit Hill in Mill Valley — the next ridge over. San Francisco and Marin towns sent fire squads and police protection. The newspapers called it the Great Fire.</p>",
+      "description": "<p>The threat wildfire poses to life and safety here is very real, even if a catastrophic fire feels distant or abstract - <em>“something that happens to someone else.”</em></p><div class=\"key-line\">It has happened all around us. It happened here in the past. And it could happen here at any time.</div><p>In July 1929 a fire swept down off Mount Tamalpais and destroyed roughly a hundred homes on Summit Hill in Mill Valley - the next ridge over. San Francisco and Marin towns sent fire squads and police protection. The newspapers called it the Great Fire.</p>",
       "media": [
         {
           "type": "image",
           "src": "media/MV_Fire_Newspaper.png",
-          "alt": "Front page of a Mill Valley, California newspaper dated Friday, July 5, 1929, headlined Great Fire Ravages Summit Hill, Famous Section of Mill Valley — one hundred homes destroyed when flames swept down from Mt. Tamalpais",
-          "caption": "Mill Valley, July 5, 1929 — one hundred homes lost on Summit Hill, the next ridge over."
+          "alt": "Front page of a Mill Valley, California newspaper dated Friday, July 5, 1929, headlined Great Fire Ravages Summit Hill, Famous Section of Mill Valley - one hundred homes destroyed when flames swept down from Mt. Tamalpais",
+          "caption": "Mill Valley, July 5, 1929 - one hundred homes lost on Summit Hill, the next ridge over."
         },
         {
           "type": "image",
           "src": "media/MV_Fire 1923.png",
           "alt": "Black and white photograph of the aftermath of the Mill Valley fire: a lone brick chimney standing over burned timbers and rubble, with scorched trees around it and a hose stream playing on the debris",
-          "caption": "The aftermath on Summit Hill — a chimney, and not much else."
+          "caption": "The aftermath on Summit Hill - a chimney, and not much else."
         }
       ],
       "mediaPosition": "right",
@@ -432,7 +432,7 @@
       "dummy": false,
       "navLabel": "The Aftermath",
       "title": "The Consequences Don't End When the Fire Is Out",
-      "description": "<p>Wildfire also presents a more immediate and tangible concern: the potential for catastrophic financial loss — to affected victims obviously, but also to neighbors whose homes didn't burn but have to deal with the aftermath.</p><p>Affected families are often displaced for years. Properties need to be decontaminated. Insurance and rebuilding get mired in permits, hearings, disputes and appeals. There are never enough contractors to rebuild quickly.</p><div class=\"key-line\">The community — not to mention financial — effects of a catastrophic wildfire ripple across neighborhoods for a decade or longer.</div>",
+      "description": "<p>Wildfire also presents a more immediate and tangible concern: the potential for catastrophic financial loss - to affected victims obviously, but also to neighbors whose homes didn't burn but have to deal with the aftermath.</p><p>Affected families are often displaced for years. Properties need to be decontaminated. Insurance and rebuilding get mired in permits, hearings, disputes and appeals. There are never enough contractors to rebuild quickly.</p><div class=\"key-line\">The community - not to mention financial - effects of a catastrophic wildfire ripple across neighborhoods for a decade or longer.</div>",
       "media": [
         {
           "type": "image",
@@ -477,7 +477,7 @@
       "dummy": false,
       "navLabel": "Why This Matters Now",
       "title": "Why Wildfire Resilience Matters Now",
-      "description": "<p>That is why wildfire resilience matters now — not only because of what could happen during the fire itself, but to avoid the disastrous aftermath.</p><div class=\"key-line\">We are protecting more than structures. We are protecting people, homes, financial security, our very way of life and the community our kids and grandkids will inherit.</div><p>The good news is that wildfire risk is not simply something that happens to us. There are meaningful things we can do — individually and together — to influence what happens when wildfire reaches our community.</p><p>That is the subject and purpose of this Story Map.</p>",
+      "description": "<p>That is why wildfire resilience matters now - not only because of what could happen during the fire itself, but to avoid the disastrous aftermath.</p><div class=\"key-line\">We are protecting more than structures. We are protecting people, homes, financial security, our very way of life and the community our kids and grandkids will inherit.</div><p>The good news is that wildfire risk is not simply something that happens to us. There are meaningful things we can do - individually and together - to influence what happens when wildfire reaches our community.</p><p>That is the subject and purpose of this Story Map.</p>",
       "mapPosition": "none",
       "location": {
         "center": [
@@ -501,13 +501,13 @@
       "dummy": false,
       "navLabel": "Collective Action",
       "title": "A History of Vision and Stewardship",
-      "description": "<p>Homestead Valley has a <a href=\"https://www.hvlt.org/history/\" target=\"_blank\" rel=\"noopener\">history</a> as a community of actively engaged neighbors.</p><div class=\"key-line\">Collective action is not new to Homestead Valley.</div><p>In fact, the community we are trying to protect exists today because earlier generations of residents chose to act together — and because of current community elders who continue to serve the community.</p>",
+      "description": "<p>Homestead Valley has a <a href=\"https://www.hvlt.org/history/\" target=\"_blank\" rel=\"noopener\">history</a> as a community of actively engaged neighbors.</p><div class=\"key-line\">Collective action is not new to Homestead Valley.</div><p>In fact, the community we are trying to protect exists today because earlier generations of residents chose to act together - and because of current community elders who continue to serve the community.</p>",
       "media": [
         {
           "type": "image",
           "src": "media/Community Stewardship Timeline_ Building Resilience Together.png",
           "alt": "Timeline of community stewardship in Homestead Valley from Coast Miwok stewardship through Spanish colonization, HVCA incorporation in 1958, the 1973 Community Acts, Firewise recognition in 2015, major wildfire grants, Measure C in 2020, and Resilient Neighbors, Resilient Neighborhoods in 2026",
-          "caption": "Community stewardship in Homestead Valley — building resilience together."
+          "caption": "Community stewardship in Homestead Valley - building resilience together."
         }
       ],
       "mediaPosition": "right",
@@ -534,7 +534,7 @@
       "dummy": false,
       "navLabel": "Preserving the Hillsides",
       "title": "When Development Threatened the Hillsides",
-      "description": "<p>When real estate development threatened Homestead's remaining hillsides, residents organized to preserve the natural landscapes that remain central to our community today — and that provide a home for miles of maintained hiking trails with vistas across the valley and out to the Bay.</p><p>They had the foresight and the expertise to organize their neighbors and raise money through a bond issue, quite literally creating the Homestead Valley we enjoy today: close to 100 acres set aside, the trail network established, and the majestic Stolte and Three Groves protected.</p>",
+      "description": "<p>When real estate development threatened Homestead's remaining hillsides, residents organized to preserve the natural landscapes that remain central to our community today - and that provide a home for miles of maintained hiking trails with vistas across the valley and out to the Bay.</p><p>They had the foresight and the expertise to organize their neighbors and raise money through a bond issue, quite literally creating the Homestead Valley we enjoy today: close to 100 acres set aside, the trail network established, and the majestic Stolte and Three Groves protected.</p>",
       "media": [
         {
           "type": "image",
@@ -546,13 +546,13 @@
           "type": "image",
           "src": "media/Yes_On_A_Flyer.png",
           "alt": "Historic Homestead Headlines extra edition flyer urging residents to vote YES ON A on a bond measure to acquire open space",
-          "caption": "The bond campaign that set aside close to 100 acres — organized by neighbors."
+          "caption": "The bond campaign that set aside close to 100 acres - organized by neighbors."
         },
         {
           "type": "image",
           "src": "media/HVLT_Trail_Map.png",
           "alt": "Homestead Valley Land Trust trail map showing the trail network, trailheads and adjacent open space",
-          "caption": "The trails and groves that bond issue bought — still maintained by the community today."
+          "caption": "The trails and groves that bond issue bought - still maintained by the community today."
         }
       ],
       "mediaPosition": "right",
@@ -579,13 +579,13 @@
       "dummy": false,
       "navLabel": "We Already Have One",
       "title": "We Don't Have to Build a Culture of Collective Action From Scratch",
-      "description": "<p>More recently, partnerships with Southern Marin Fire, Marin Wildfire and other public agencies have brought additional expertise and resources to home hardening, vegetation management and neighborhood resilience.</p><div class=\"key-line\">We don't have to build a culture of collective action from scratch. We already have one.</div><p>Our challenge today is not to choose between preserving the landscape we love and protecting ourselves from wildfire. It is learning how to live more resiliently within this landscape — and applying the same spirit of collective action that helped preserve Homestead to the challenge immediately around us.</p>",
+      "description": "<p>More recently, partnerships with Southern Marin Fire, Marin Wildfire and other public agencies have brought additional expertise and resources to home hardening, vegetation management and neighborhood resilience.</p><div class=\"key-line\">We don't have to build a culture of collective action from scratch. We already have one.</div><p>Our challenge today is not to choose between preserving the landscape we love and protecting ourselves from wildfire. It is learning how to live more resiliently within this landscape - and applying the same spirit of collective action that helped preserve Homestead to the challenge immediately around us.</p>",
       "media": [
         {
           "type": "image",
           "src": "media/Stolte_Grove_Stage.jpg",
           "alt": "The open-air wooden stage at Stolte Grove, set among mature redwoods",
-          "caption": "The Stolte Grove stage — built and maintained by the community, on land the community bought."
+          "caption": "The Stolte Grove stage - built and maintained by the community, on land the community bought."
         }
       ],
       "mediaPosition": "right",
@@ -642,7 +642,7 @@
           "type": "image",
           "src": "media/Placard.jpeg",
           "alt": "A green reflective address placard reading 339 staked at the edge of a Homestead Valley driveway, beside the weathered carved wooden house number it replaces",
-          "caption": "New reflective placard, old wooden number — and the difference a first responder sees at night."
+          "caption": "New reflective placard, old wooden number - and the difference a first responder sees at night."
         }
       ],
       "mediaPosition": "right",
@@ -668,20 +668,20 @@
       "icon": "shield",
       "dummy": false,
       "navLabel": "The Community Center",
-      "title": "Hardening the Community Center — and Leading the Committee",
+      "title": "Hardening the Community Center - and Leading the Committee",
       "description": "<p>The Safety Committee led an effort to harden the Homestead Valley Community Center as both a demonstration project for wildfire resilience and an emergency refuge for the community. Current efforts focus on expanding Neighborhood Response Groups, improving emergency communications, strengthening neighborhood coordination, and continuing public education through regular newsletters and outreach.</p><p>Much of this work has been led by <strong>Jim Derich</strong>. A longtime Mill Valley educator and elementary school principal, Jim brought decades of emergency planning experience to Homestead Valley. Following the North Bay wildfires, between 2017 and 2020, he helped guide the Safety Committee's transition from earthquake preparedness toward a greater focus on wildfire resilience.</p>",
       "media": [
         {
           "type": "video",
           "alt": "Jim Derich on organizing Homestead Valley into 69 blocks and the shift from earthquake to wildfire preparedness",
-          "caption": "Jim Derich — Homestead Valley Safety Committee.",
-          "pendingNote": "Client interview (Jim_Derich_Interview.mp4) not yet supplied in Graphics WIP_ Latest. Upload to YouTube and add the URL to this item's youtubeUrl field in data/chapters.json."
+          "caption": "Jim Derich - Homestead Valley Safety Committee.",
+          "pendingNote": "Client interview (Jim_Derich_Interview.mp4) not yet supplied. Upload to YouTube and add the URL to this item's youtubeUrl field in data/chapters.json."
         },
         {
           "type": "image",
           "src": "media/HV_Community_Center.jpg",
           "alt": "The entrance to the Homestead Valley Community Center, a wood-sided building with a deck and metal lettering",
-          "caption": "The Community Center — hardened as a working demonstration project and an emergency refuge."
+          "caption": "The Community Center - hardened as a working demonstration project and an emergency refuge."
         }
       ],
       "mediaPosition": "right",
@@ -707,7 +707,7 @@
       "icon": "flame",
       "dummy": false,
       "navLabel": "Firewise in Action",
-      "title": "Firewise® — Turning Planning Into Action",
+      "title": "Firewise® - Turning Planning Into Action",
       "description": "<p>As Homestead Valley prepared to become one of Marin County's first Firewise® Communities in 2015, then Fire Captain Carey Gloeckner of Southern Marin Fire District completed a comprehensive wildfire assessment. The report established the technical foundation for Homestead Valley's Firewise® designation and identified priorities for reducing community wildfire risk.</p><p><a href=\"media/Firewise%20Assessment_Homestead%20Valley_rev3_Cary%20Gloekner_102815.pdf\" target=\"_blank\" rel=\"noopener\">Read the full Firewise® assessment report (PDF)</a></p>",
       "media": [
         {
@@ -741,12 +741,12 @@
       "dummy": false,
       "navLabel": "$400,000 in Grants",
       "title": "From Designation to Dozens of Trees Removed",
-      "description": "<p>Homestead community member and HVLT consultant <strong>Mark Stahl</strong> was crucial to our initial Firewise® designation. After the award, he helped the HVLT secure two initial wildfire mitigation grants totaling <strong>approximately $400,000</strong> — kicking off the Firewise® program in Homestead with the removal of dozens of eucalyptus trees from HVLT land that threatened neighbors in the Pixie neighborhood.</p>",
+      "description": "<p>Homestead community member and HVLT consultant <strong>Mark Stahl</strong> was crucial to our initial Firewise® designation. After the award, he helped the HVLT secure two initial wildfire mitigation grants totaling <strong>approximately $400,000</strong> - kicking off the Firewise® program in Homestead with the removal of dozens of eucalyptus trees from HVLT land that threatened neighbors in the Pixie neighborhood.</p>",
       "media": [
         {
           "type": "video",
           "alt": "Mark Stahl on securing the grants that funded eucalyptus removal above the Pixie neighborhood",
-          "caption": "Mark Stahl — turning Firewise® recognition into funded projects.",
+          "caption": "Mark Stahl - turning Firewise® recognition into funded projects.",
           "pendingNote": "Client interview not yet supplied. Upload to YouTube and add the URL to this item's youtubeUrl field in data/chapters.json."
         },
         {
@@ -759,7 +759,7 @@
           "type": "image",
           "src": "media/Pixie_Hill_Eucalyptus_Forest.jpeg",
           "alt": "A hillside eucalyptus grove on the Pixie side of the valley, standing directly above Homestead Valley homes",
-          "caption": "The eucalyptus above Pixie — the stand these projects target."
+          "caption": "The eucalyptus above Pixie - the stand these projects target."
         }
       ],
       "mediaPosition": "right",
@@ -786,7 +786,7 @@
       "dummy": false,
       "navLabel": "10X the Requirement",
       "title": "We Have Invested Over 10× What Firewise® Requires",
-      "description": "<p>While Mark was central in establishing our status as a Firewise® community, it is now our very own wildfire resiliency expert, <strong>Dr. Steven Quarles</strong>, who stewards the program.</p><p>Each year we have to maintain our Firewise® status by responding to a detailed survey from the certifying body, the <a href=\"https://www.nfpa.org/education-and-research/wildfire/Firewise-usa\" target=\"_blank\" rel=\"noopener\">National Fire Protection Association</a>. It is measured on two primary axes and, though rather simplistic — simply dollar volume invested into either home hardening or defensible space management — it demonstrates Homestead's continuing engagement.</p><div class=\"key-line\">Congratulations, neighbors: we have invested over 10× the required community investment to retain our Firewise® status.</div><p>Today most homes have Class A roofs, metal gutters are common, roof maintenance has improved considerably, the fire department is very proactive in conducting inspections, and our tax dollars support the Marin Wildfire Prevention Authority. These improvements significantly strengthen our resilience in the face of a wildfire.</p>",
+      "description": "<p>While Mark was central in establishing our status as a Firewise® community, it is now our very own wildfire resiliency expert, <strong>Dr. Steven Quarles</strong>, who stewards the program.</p><p>Each year we have to maintain our Firewise® status by responding to a detailed survey from the certifying body, the <a href=\"https://www.nfpa.org/education-and-research/wildfire/Firewise-usa\" target=\"_blank\" rel=\"noopener\">National Fire Protection Association</a>. It is measured on two primary axes and, though rather simplistic - simply dollar volume invested into either home hardening or defensible space management - it demonstrates Homestead's continuing engagement.</p><div class=\"key-line\">Congratulations, neighbors: we have invested over 10× the required community investment to retain our Firewise® status.</div><p>Today most homes have Class A roofs, metal gutters are common, roof maintenance has improved considerably, the fire department is very proactive in conducting inspections, and our tax dollars support the Marin Wildfire Prevention Authority. These improvements significantly strengthen our resilience in the face of a wildfire.</p>",
       "media": [
         {
           "type": "image",
@@ -798,7 +798,7 @@
           "type": "video",
           "youtubeUrl": "https://www.youtube.com/watch?v=1VsGgtiU2rE",
           "alt": "Steve Quarles on building materials, roofs and ember resistance",
-          "caption": "Dr. Steve Quarles — what a decade of home hardening has actually bought us."
+          "caption": "Dr. Steve Quarles - what a decade of home hardening has actually bought us."
         }
       ],
       "mediaPosition": "right",
@@ -825,13 +825,13 @@
       "dummy": false,
       "navLabel": "Southern Marin Fire",
       "title": "Southern Marin Fire District Is a Proactive Partner",
-      "description": "<p>Southern Marin Fire District conducts hundreds of annual home inspections with wildfire risk reports, and supports the HVLT's open space fuel management efforts with budget, work crews and participation in educational and other community events.</p><p><strong>Marshall Nau</strong> is our Deputy Fire Marshal and has been an invaluable partner — educating, cajoling and convincing community members to upgrade ember-resistant vents and install gutter guards, and generally supporting the HVLT's vegetation management initiatives with work crews and project oversight.</p><p>SMFD remains active on vegetation management and other risk mitigation projects. See the <a href=\"https://cdn.prod.website-files.com/6107823cbe8db485b50aa8f8/69f3b20b212cc8fb23aac81f_CWPP_2025_ZoneSpecificSummaries_4-29-26_Southern_Marin.pdf\" target=\"_blank\" rel=\"noopener\">2025 CWPP zone-specific summaries for Southern Marin (PDF)</a>.</p>",
+      "description": "<p>Southern Marin Fire District conducts hundreds of annual home inspections with wildfire risk reports, and supports the HVLT's open space fuel management efforts with budget, work crews and participation in educational and other community events.</p><p><strong>Marshall Nau</strong> is our Deputy Fire Marshal and has been an invaluable partner - educating, cajoling and convincing community members to upgrade ember-resistant vents and install gutter guards, and generally supporting the HVLT's vegetation management initiatives with work crews and project oversight.</p><p>SMFD remains active on vegetation management and other risk mitigation projects. See the <a href=\"https://cdn.prod.website-files.com/6107823cbe8db485b50aa8f8/69f3b20b212cc8fb23aac81f_CWPP_2025_ZoneSpecificSummaries_4-29-26_Southern_Marin.pdf\" target=\"_blank\" rel=\"noopener\">2025 CWPP zone-specific summaries for Southern Marin (PDF)</a>.</p>",
       "media": [
         {
           "type": "video",
           "alt": "Marshall Nau, Deputy Fire Marshal, on Southern Marin Fire District's home inspections and open space fuel management",
-          "caption": "Marshall Nau — Southern Marin Fire District as a partner.",
-          "pendingNote": "Raw interview supplied as Graphics WIP_ Latest/Videos/MN1.mp4 (980 MB) — too large to self-host. Upload to YouTube and add the URL to this item's youtubeUrl field in data/chapters.json."
+          "caption": "Marshall Nau - Southern Marin Fire District as a partner.",
+          "pendingNote": "Raw interview supplied MN1.mp4 (980 MB) - too large to self-host. Upload to YouTube and add the URL to this item's youtubeUrl field in data/chapters.json."
         }
       ],
       "mediaPosition": "right",
@@ -858,13 +858,13 @@
       "dummy": false,
       "navLabel": "The Shaded Fuel Break",
       "title": "The Homestead–Tamalpais Shaded Fuel Break",
-      "description": "<p>The Homestead–Tamalpais Shaded Fuel Break Project has just received CEQA approval and represents a very exciting initiative toward Homestead's wildfire resiliency.</p><p>A shaded fuel break thins the understory and ladder fuels along a ridgeline while leaving the overstory canopy in place — giving firefighters somewhere to stand and work, and slowing a fire before it reaches the built environment.</p><ul><li><a href=\"https://cdn.prod.website-files.com/6107823bbe8db473290aa8ef/687abef09882fae2ee969b50_GMVFB%20PublicPresentation_2025-06-24.pdf\" target=\"_blank\" rel=\"noopener\">MWPA — Greater Mill Valley shaded fuel break public presentation (PDF)</a></li><li><a href=\"https://www.smfd.org/home/showpublisheddocument/2671/638083478055700000\" target=\"_blank\" rel=\"noopener\">Southern Marin Fire District — Tamalpais / Homestead Valley shaded fuel break (PDF)</a></li></ul>",
+      "description": "<p>The Homestead–Tamalpais Shaded Fuel Break Project has just received CEQA approval and represents a very exciting initiative toward Homestead's wildfire resiliency.</p><p>A shaded fuel break thins the understory and ladder fuels along a ridgeline while leaving the overstory canopy in place - giving firefighters somewhere to stand and work, and slowing a fire before it reaches the built environment.</p><ul><li><a href=\"https://cdn.prod.website-files.com/6107823bbe8db473290aa8ef/687abef09882fae2ee969b50_GMVFB%20PublicPresentation_2025-06-24.pdf\" target=\"_blank\" rel=\"noopener\">MWPA - Greater Mill Valley shaded fuel break public presentation (PDF)</a></li><li><a href=\"https://www.smfd.org/home/showpublisheddocument/2671/638083478055700000\" target=\"_blank\" rel=\"noopener\">Southern Marin Fire District - Tamalpais / Homestead Valley shaded fuel break (PDF)</a></li></ul>",
       "media": [
         {
           "type": "video",
           "alt": "Marshall Nau on the Homestead-Tamalpais shaded fuel break project",
-          "caption": "Marshall Nau — the shaded fuel break, and what it buys us.",
-          "pendingNote": "Client clip MN2.mp4 not yet supplied in Graphics WIP_ Latest. The fuel break project map (Homestead Valley Fuel Break.png) is also still outstanding."
+          "caption": "Marshall Nau - the shaded fuel break, and what it buys us.",
+          "pendingNote": "Client clip MN2.mp4 not yet supplied. The fuel break project map (Homestead Valley Fuel Break.png) is also still outstanding."
         }
       ],
       "mediaPosition": "right",
@@ -891,7 +891,7 @@
       "dummy": false,
       "navLabel": "Wildfire Here",
       "title": "What Does Wildfire Look Like Here?",
-      "description": "<p>What would wildfire really look like if it reached Homestead Valley?</p><p>Is the greatest threat a wall of flames — or something much smaller? What can you do around your own property to influence the outcome? And what becomes possible when neighbors begin doing those things together?</p><div class=\"key-line\">Zoom out first. Homestead Valley — shown in red — is Marin County Service Area 14, about 469 acres between Mill Valley and Mount Tamalpais State Park.</div>",
+      "description": "<p>What would wildfire really look like if it reached Homestead Valley?</p><p>Is the greatest threat a wall of flames - or something much smaller? What can you do around your own property to influence the outcome? And what becomes possible when neighbors begin doing those things together?</p><div class=\"key-line\">Zoom out first. Homestead Valley - shown in green - is Marin County Service Area 14, about 469 acres between Mill Valley and Mount Tamalpais State Park.</div>",
       "mapNote": "CSA 14 is the boundary the County and local fire agencies use to define Homestead Valley, drawn here directly from the County's own GIS data.",
       "media": [
         {
@@ -926,7 +926,7 @@
       "dummy": false,
       "navLabel": "The Shape of Homestead",
       "title": "See the Shape of Homestead",
-      "description": "<p>Our exposure begins with the landscape itself.</p><p>Homestead sits in the coastal range and is characterized by the steep hills and valleys that surround us — terrain that creates unpredictable winds and firefighting challenges for our first responders.</p><div class=\"key-line\">Homestead is not a flat suburban grid. The terrain itself shapes fire behavior and access.</div><div class=\"pro-tip\"><strong>Pro Tip: Start With What You Can Control</strong>You cannot control where a wildfire starts or the prevailing wind. Focus first on the conditions immediately around your home, and then your immediate neighbors.</div>",
+      "description": "<p>Our exposure begins with the landscape itself.</p><p>Homestead sits in the coastal range and is characterized by the steep hills and valleys that surround us - terrain that creates unpredictable winds and firefighting challenges for our first responders.</p><div class=\"key-line\">Homestead is not a flat suburban grid. The terrain itself shapes fire behavior and access.</div><div class=\"pro-tip\"><strong>Pro Tip: Start With What You Can Control</strong>You cannot control where a wildfire starts or the prevailing wind. Focus first on the conditions immediately around your home, and then your immediate neighbors.</div>",
       "media": [
         {
           "type": "image",
@@ -962,16 +962,16 @@
       "dummy": false,
       "navLabel": "Wildland Interface",
       "title": "We Are the Definition of the W.U.I.",
-      "description": "<p>Combine this topography with the tens of thousands of acres of open space to our west — including untreated federal lands in the GGNRA — and it becomes clear why we are at elevated wildfire risk.</p><p>We have so many trees, invasives like eucalyptus, and we back directly onto thousands of acres of open space. Our homes sit interwoven with HVLT land, Marin County lands and federal open space.</p>",
+      "description": "<p>Combine this topography with the tens of thousands of acres of open space to our west - including untreated federal lands in the GGNRA - and it becomes clear why we are at elevated wildfire risk.</p><p>We have so many trees, invasives like eucalyptus, and we back directly onto thousands of acres of open space. Our homes sit interwoven with HVLT land, Marin County lands and federal open space.</p>",
       "media": [
         {
           "type": "image",
           "src": "media/Homestead_Trail_Euc_Forest.jpeg",
           "alt": "A wide panoramic view along the Homestead Trail, running beneath a mature eucalyptus forest with bark and leaf litter across the dry ground",
-          "caption": "The eucalyptus along the Homestead Trail — a continuous fuel bed running right up to the neighborhoods."
+          "caption": "The eucalyptus along the Homestead Trail - a continuous fuel bed running right up to the neighborhoods."
         }
       ],
-      "mapNote": "Vegetation density shown here (from Sentinel-2 NDVI analysis) is a real, data-derived proxy for fuel load across the wildland-urban interface, with relief shading from the 1m LIDAR DEM over it. Gaps in the green are ground that scored below the vegetated threshold on a September dry-season scene — roads, roofs and cured grass — not missing data. HVLT, Marin County and GGNRA ownership boundaries are not yet available as GIS layers from the client, so they are not shown.",
+      "mapNote": "Vegetation density shown here (from Sentinel-2 NDVI analysis) is a real, data-derived proxy for fuel load across the wildland-urban interface, with relief shading from the 1m LIDAR DEM over it. Gaps in the green are ground that scored below the vegetated threshold on a September dry-season scene - roads, roofs and cured grass - not missing data. HVLT, Marin County and GGNRA ownership boundaries are not yet available as GIS layers from the client, so they are not shown.",
       "mediaPosition": "right",
       "mapPosition": "left",
       "location": {
@@ -998,13 +998,13 @@
       "dummy": false,
       "navLabel": "Not a Wall of Flames",
       "title": "The More Likely Scenario Is Not a Wall of Flames",
-      "description": "<p>When most of us picture wildfire, we imagine a forest or brush fire burning out of control in the mountains — or perhaps a wall of flames advancing toward homes over a distant ridge.</p><p>That can happen.</p><div class=\"key-line\">However, the more likely scenario is wind-driven embers that travel well ahead of a fire, exposing many properties at once.</div><p>If those embers — or an approaching fire — ignite homes, vegetation, fences, decks or other combustible materials, the emergency spirals quickly out of control as one home ignition explodes in embers and contributes to another, until emergency responders lose control.</p>",
+      "description": "<p>When most of us picture wildfire, we imagine a forest or brush fire burning out of control in the mountains - or perhaps a wall of flames advancing toward homes over a distant ridge.</p><p>That can happen.</p><div class=\"key-line\">However, the more likely scenario is wind-driven embers that travel well ahead of a fire, exposing many properties at once.</div><p>If those embers - or an approaching fire - ignite homes, vegetation, fences, decks or other combustible materials, the emergency spirals quickly out of control as one home ignition explodes in embers and contributes to another, until emergency responders lose control.</p>",
       "media": [
         {
           "type": "image",
           "src": "media/Ember Storm Precedes Fire Front.png",
           "alt": "Infographic: a flame front, Diablo winds lifting embers over a ridge, and resulting spot ignitions roughly 1.5-2 miles away in another neighborhood",
-          "caption": "1.5–2 miles is an illustrative ember-travel distance, not a hard maximum — embers can travel farther under the right wind conditions."
+          "caption": "1.5–2 miles is an illustrative ember-travel distance, not a hard maximum - embers can travel farther under the right wind conditions."
         },
         {
           "type": "image",
@@ -1037,7 +1037,7 @@
       "dummy": false,
       "navLabel": "Into the Neighborhood",
       "title": "When Wildfire Enters the Built Environment",
-      "description": "<p>In a community like Homestead Valley, the worst case scenario is what could happen when wildfire enters the built environment — our neighborhoods.</p><p>Once multiple structures are burning, emergency resources will quickly become stretched. Firefighters will focus on evacuation, life safety and containing the larger fire rather than defending individual homes.</p><div class=\"key-line\">Communities like Coffey Park in Santa Rosa suffered this fate, and were tragically largely destroyed.</div>",
+      "description": "<p>In a community like Homestead Valley, the worst case scenario is what could happen when wildfire enters the built environment - our neighborhoods.</p><p>Once multiple structures are burning, emergency resources will quickly become stretched. Firefighters will focus on evacuation, life safety and containing the larger fire rather than defending individual homes.</p><div class=\"key-line\">Communities like Coffey Park in Santa Rosa suffered this fate, and were tragically largely destroyed.</div>",
       "media": [
         {
           "type": "image",
@@ -1070,8 +1070,8 @@
       "dummy": false,
       "navLabel": "Access & Egress",
       "title": "See the Access Challenge",
-      "description": "<p>Terrain also shapes concerning realities around evacuation — our ability to get out, and firefighters' ability to reach and defend our homes.</p><p>Most of our streets are narrow and winding. If there is a fire at higher elevation and neighbors are evacuating while first responders are trying to reach the incident, traffic and access could further complicate matters.</p><p>Winding hillside streets, ridgeline roads, dead ends, cul-de-sacs and limited access and egress areas all mean the same thing:</p><div class=\"key-line\">Structure defense cannot always be assumed during a fast-moving incident. In an evacuation it's like a navigation map with all routes turning red.</div>",
-      "mapNote": "Elevation contours (20 ft interval, labeled every 40 ft) show the terrain evacuation routes have to climb. The road network distinguishes through-streets (solid) from service drives, footpaths and trails (dotted) — the routes actually available for evacuation and fire-apparatus access. Distinguishing the main evacuation corridors in red, per the design brief, needs a County-designated evacuation-route layer that has not yet been supplied.",
+      "description": "<p>Terrain also shapes concerning realities around evacuation - our ability to get out, and firefighters' ability to reach and defend our homes.</p><p>Most of our streets are narrow and winding. If there is a fire at higher elevation and neighbors are evacuating while first responders are trying to reach the incident, traffic and access could further complicate matters.</p><p>Winding hillside streets, ridgeline roads, dead ends, cul-de-sacs and limited access and egress areas all mean the same thing:</p><div class=\"key-line\">Structure defense cannot always be assumed during a fast-moving incident. In an evacuation it's like a navigation map with all routes turning red.</div>",
+      "mapNote": "Elevation contours (20 ft interval, labeled every 40 ft) show the terrain evacuation routes have to climb. The road network distinguishes through-streets (solid) from service drives, footpaths and trails (dotted) - the routes actually available for evacuation and fire-apparatus access. Distinguishing the main evacuation corridors in red, per the design brief, needs a County-designated evacuation-route layer that has not yet been supplied.",
       "mapPosition": "left",
       "location": {
         "center": [
@@ -1098,7 +1098,7 @@
       "dummy": false,
       "navLabel": "Unique Homes",
       "title": "A Unique Community Full of Unique Homes and Microclimates",
-      "description": "<p>Our exposure is shaped by the landscape around us — the extraordinary beauty we enjoy every day. Homestead occupies a landscape of ridges, steep slopes, valleys and drainages, and our homes sit alongside a larger network of HVLT, Marin County and federal open space.</p><p>These are not abstract conditions on a hazard map. They are the ridges we see from our windows, the trees that surround us, the open spaces we shepherd as a community and the trails we walk every day.</p><div class=\"key-line\">This is the landscape we've chosen by living here. Yes, our wildfire risk is elevated. The question is how we live more resiliently within it.</div><div class=\"pro-tip\"><strong>Pro Tip: Wildfire Is Part of This Ecosystem</strong>Understand and accept that wildfire is a natural part of the California ecosystem. We will never eliminate wildfire, but by our actions and choices we can become significantly more resilient. Our choices matter.</div>",
+      "description": "<p>Our exposure is shaped by the landscape around us - the extraordinary beauty we enjoy every day. Homestead occupies a landscape of ridges, steep slopes, valleys and drainages, and our homes sit alongside a larger network of HVLT, Marin County and federal open space.</p><p>These are not abstract conditions on a hazard map. They are the ridges we see from our windows, the trees that surround us, the open spaces we shepherd as a community and the trails we walk every day.</p><div class=\"key-line\">This is the landscape we've chosen by living here. Yes, our wildfire risk is elevated. The question is how we live more resiliently within it.</div><div class=\"pro-tip\"><strong>Pro Tip: Wildfire Is Part of This Ecosystem</strong>Understand and accept that wildfire is a natural part of the California ecosystem. We will never eliminate wildfire, but by our actions and choices we can become significantly more resilient. Our choices matter.</div>",
       "media": [
         {
           "type": "image",
@@ -1110,7 +1110,7 @@
           "type": "image",
           "src": "media/G02_L2_Understanding_Your_Home_s_Risk.png",
           "alt": "Framework showing how terrain exposure (ridge or steep slope versus gentle slope) and surroundings (open space versus developed lots) combine into four exposure profiles, each with a different mitigation focus",
-          "caption": "Understanding your home's risk — four exposure profiles, four different places to start."
+          "caption": "Understanding your home's risk - four exposure profiles, four different places to start."
         }
       ],
       "mediaPosition": "right",
@@ -1137,7 +1137,7 @@
       "dummy": false,
       "navLabel": "Wind Exposure",
       "title": "See How Wind Can Change Exposure",
-      "description": "<p>Wind plays a very big factor in wildfire risk, and different homes face different exposures.</p><p>While wind can vary, there are two primary wind and weather events that create the greatest risk in Homestead, particularly when combined with extreme heat and low humidity — the ingredients of red flag days.</p><p>Hot, dry <strong>Diablo</strong> winds blow out of the Central Valley and push arid air offshore, only to reverse and blow back onshore before the marine layer can re-establish, cool temperatures and raise ambient humidity.</p><div class=\"key-line\">There is no single direction from which wildfire must arrive.</div>",
+      "description": "<p>Wind plays a very big factor in wildfire risk, and different homes face different exposures.</p><p>While wind can vary, there are two primary wind and weather events that create the greatest risk in Homestead, particularly when combined with extreme heat and low humidity - the ingredients of red flag days.</p><p>Hot, dry <strong>Diablo</strong> winds blow out of the Central Valley and push arid air offshore, only to reverse and blow back onshore before the marine layer can re-establish, cool temperatures and raise ambient humidity.</p><div class=\"key-line\">There is no single direction from which wildfire must arrive.</div>",
       "media": [
         {
           "type": "image",
@@ -1173,8 +1173,8 @@
       "dummy": false,
       "navLabel": "Where to Intervene",
       "title": "Where Do We Have the Greatest Ability to Intervene?",
-      "description": "<p>We cannot change the terrain, and we cannot choose the wind.</p><p>So if the goal is to prevent a wildfire from becoming a neighborhood fire, where do we actually have leverage?</p><div class=\"key-line\">The answer begins with understanding how homes actually ignite — and how we prevent it.</div>",
-      "mapNote": "Fuel load and elevation are mapped together as a bivariate surface: red intensifies with vegetation density, blue with elevation, and the two combine to dark plum where both are high — the ground where fuel treatment and access work pay off most. Pale neutral means neither factor is elevated. Read any color off the 4×4 legend grid to recover both values.",
+      "description": "<p>We cannot change the terrain, and we cannot choose the wind.</p><p>So if the goal is to prevent a wildfire from becoming a neighborhood fire, where do we actually have leverage?</p><div class=\"key-line\">The answer begins with understanding how homes actually ignite - and how we prevent it.</div>",
+      "mapNote": "Fuel load and elevation are mapped together as a bivariate surface: red intensifies with vegetation density, blue with elevation, and the two combine to dark plum where both are high - the ground where fuel treatment and access work pay off most. Pale neutral means neither factor is elevated. Read any color off the 4×4 legend grid to recover both values.",
       "mapPosition": "left",
       "location": {
         "center": [
@@ -1224,7 +1224,7 @@
       "dummy": false,
       "navLabel": "Two Concepts",
       "title": "Two Ideas Worth Defining: Defensible Space and Home Hardening",
-      "description": "<p>There are two separate concepts here that most of us are familiar with, but that merit defining.</p><p><strong>First, <a href=\"https://www.fire.ca.gov/dspace\" target=\"_blank\" rel=\"noopener\">defensible space</a></strong> — sometimes referred to as <em>vegetation management</em>. These are risk mitigation measures that involve your plants, your landscaping and your trees. The terms you'll hear are Zones 0, 1 and 2, the most important being Zone 0.</p><p><strong>Second, <a href=\"https://www.fire.ca.gov/home-hardening\" target=\"_blank\" rel=\"noopener\">home hardening</a></strong> — structural retrofits made directly to your home to harden it against wildfire. Vent upgrades, gutter guard installations, replacing single-pane windows with dual-pane tempered, and installing defense mesh underneath decks and inside lattices to prevent ember intrusion.</p>",
+      "description": "<p>There are two separate concepts here that most of us are familiar with, but that merit defining.</p><p><strong>First, <a href=\"https://www.fire.ca.gov/dspace\" target=\"_blank\" rel=\"noopener\">defensible space</a></strong> - sometimes referred to as <em>vegetation management</em>. These are risk mitigation measures that involve your plants, your landscaping and your trees. The terms you'll hear are Zones 0, 1 and 2, the most important being Zone 0.</p><p><strong>Second, <a href=\"https://www.fire.ca.gov/home-hardening\" target=\"_blank\" rel=\"noopener\">home hardening</a></strong> - structural retrofits made directly to your home to harden it against wildfire. Vent upgrades, gutter guard installations, replacing single-pane windows with dual-pane tempered, and installing defense mesh underneath decks and inside lattices to prevent ember intrusion.</p>",
       "media": [
         {
           "type": "image",
@@ -1286,14 +1286,14 @@
       "icon": "shield",
       "dummy": false,
       "navLabel": "Zone 0: First 5 Feet",
-      "title": "First Look Inward From 5 Feet In — That's Zone 0",
-      "description": "<p>The first five feet around your home deserve special attention, because a spot fire from an ember landing here has very little distance to travel before threatening your home.</p><p>Wind-blown embers will pile up on decks or against garage doors — really into any nook and cranny on your roof or against your home.</p><p>California has released the approved <a href=\"https://bof.fire.ca.gov/projects-and-programs/defensible-space-zones-0-1-and-2\" target=\"_blank\" rel=\"noopener\">Zone 0, 1 and 2 defensible space regulations</a> — worth reading before you start.</p>",
+      "title": "First Look Inward From 5 Feet In - That's Zone 0",
+      "description": "<p>The first five feet around your home deserve special attention, because a spot fire from an ember landing here has very little distance to travel before threatening your home.</p><p>Wind-blown embers will pile up on decks or against garage doors - really into any nook and cranny on your roof or against your home.</p><p>California has released the approved <a href=\"https://bof.fire.ca.gov/projects-and-programs/defensible-space-zones-0-1-and-2\" target=\"_blank\" rel=\"noopener\">Zone 0, 1 and 2 defensible space regulations</a> - worth reading before you start.</p>",
       "media": [
         {
           "type": "image",
           "src": "media/Zone_0 graphic.png",
           "alt": "Before and after comparison of the first five feet around a home: a vulnerable side yard with a wood fence, wood mulch and shrubs against the siding, versus a Zone 0 compliant yard with a metal gate, gravel ground cover and plants set back five feet",
-          "caption": "Zone 0 before and after — and the non-combustible ground covers that get you there: gravel, decomposed granite, pavers, concrete."
+          "caption": "Zone 0 before and after - and the non-combustible ground covers that get you there: gravel, decomposed granite, pavers, concrete."
         }
       ],
       "mediaPosition": "right",
@@ -1320,19 +1320,19 @@
       "dummy": false,
       "navLabel": "How Embers Ignite Homes",
       "title": "How Embers Ignite Homes",
-      "description": "<p>If we accept the premise that most homes ignite in a wildfire as the result of ember intrusion — and we understand that in a wind-driven blizzard, embers can rain down on multiple neighborhoods well ahead of the main fire — the natural first step is to prioritize ember resistance.</p><p>Embers collect in gutters and beneath decks, enter vulnerable vents and openings, or ignite dry vegetation, leaf litter, wood mulch and other combustible materials around a home. Those initial spot fires then expose windows, siding, decks, fences and ultimately the structure itself.</p><div class=\"key-line\">If thousands of embers landed on and around your home today, what would they find?</div><p>What is the condition of your roof? Do you have flammable material under your deck? Are your vent covers 1/8\" gauge or smaller?</p><div class=\"pro-tip\"><strong>Pro Tip: Think Like an Ember</strong>Walk around your house and ask: Where could an ember land, and where would embers collect? Small gaps and small accumulations matter. Wherever leaves gather — against walls, garage doors or under dormers — is where embers are likely to gather too.</div>",
+      "description": "<p>If we accept the premise that most homes ignite in a wildfire as the result of ember intrusion - and we understand that in a wind-driven blizzard, embers can rain down on multiple neighborhoods well ahead of the main fire - the natural first step is to prioritize ember resistance.</p><p>Embers collect in gutters and beneath decks, enter vulnerable vents and openings, or ignite dry vegetation, leaf litter, wood mulch and other combustible materials around a home. Those initial spot fires then expose windows, siding, decks, fences and ultimately the structure itself.</p><div class=\"key-line\">If thousands of embers landed on and around your home today, what would they find?</div><p>What is the condition of your roof? Do you have flammable material under your deck? Are your vent covers 1/8\" gauge or smaller?</p><div class=\"pro-tip\"><strong>Pro Tip: Think Like an Ember</strong>Walk around your house and ask: Where could an ember land, and where would embers collect? Small gaps and small accumulations matter. Wherever leaves gather - against walls, garage doors or under dormers - is where embers are likely to gather too.</div>",
       "media": [
         {
           "type": "image",
           "src": "media/How Embers Ignite Homes.png",
-          "alt": "Section 2 poster, How Homes Ignite: Embers Find a Way — a five-stage ignition sequence, a labelled diagram of where embers land and lose their heat on a house, and a before/after comparison of an ember vulnerable versus ember ready home",
-          "caption": "Where embers look to land and lose their heat — and the same home, made ember ready."
+          "alt": "Section 2 poster, How Homes Ignite: Embers Find a Way - a five-stage ignition sequence, a labelled diagram of where embers land and lose their heat on a house, and a before/after comparison of an ember vulnerable versus ember ready home",
+          "caption": "Where embers look to land and lose their heat - and the same home, made ember ready."
         },
         {
           "type": "image",
           "src": "media/High risk home vs. low risk.png",
           "alt": "Side-by-side comparison of a high risk, ember-vulnerable home and a low risk, ember-ready home",
-          "caption": "Same home, different outcome — small changes at entry points make a big difference."
+          "caption": "Same home, different outcome - small changes at entry points make a big difference."
         }
       ],
       "mediaPosition": "right",
@@ -1359,13 +1359,13 @@
       "dummy": false,
       "navLabel": "Zones 1 & 2",
       "title": "After Inward, Look Outward to Zones 1 and 2",
-      "description": "<p><strong>Your goal is to de-energize an approaching fire through vegetation management.</strong></p><p>Your home does not exist in isolation. For the great majority of neighbors in Homestead, Zones 1 and 2 incorporate our neighbor's property. Fences, hedges, trees, decks, sheds and other combustible materials often create connections between properties. During wildfire, those connections can become fire pathways between structures.</p><p>On a slope — like most of our homes — continuous grasses, shrubs, trees and hedges create pathways for fire to climb toward structures. By eliminating ladder fuels and creating separation between groups of plants and trees, we interrupt those pathways and reduce and redirect the energy available to a fire.</p><div class=\"pro-tip\"><strong>Pro Tip: Manage, Don't Eliminate</strong>The goal is not to eliminate vegetation. It is to manage and maintain it strategically. Target combustible invasives and ladder fuels like vines that could pass fire from ground level up into the tree canopy.</div>",
+      "description": "<p><strong>Your goal is to de-energize an approaching fire through vegetation management.</strong></p><p>Your home does not exist in isolation. For the great majority of neighbors in Homestead, Zones 1 and 2 incorporate our neighbor's property. Fences, hedges, trees, decks, sheds and other combustible materials often create connections between properties. During wildfire, those connections can become fire pathways between structures.</p><p>On a slope - like most of our homes - continuous grasses, shrubs, trees and hedges create pathways for fire to climb toward structures. By eliminating ladder fuels and creating separation between groups of plants and trees, we interrupt those pathways and reduce and redirect the energy available to a fire.</p><div class=\"pro-tip\"><strong>Pro Tip: Manage, Don't Eliminate</strong>The goal is not to eliminate vegetation. It is to manage and maintain it strategically. Target combustible invasives and ladder fuels like vines that could pass fire from ground level up into the tree canopy.</div>",
       "media": [
         {
           "type": "image",
           "src": "media/Fork_WFR_Signage.jpeg",
           "alt": "A yellow Open Your Wildfire Risk Report sign mounted at the Fork, beside the valley's giant fork sculpture and a bike route sign",
-          "caption": "At the Fork — open your wildfire risk report and start with your own property."
+          "caption": "At the Fork - open your wildfire risk report and start with your own property."
         },
         {
           "type": "image",
@@ -1409,13 +1409,13 @@
       "dummy": false,
       "navLabel": "Your Brother's Keeper",
       "title": "You Are Your Brother's Keeper",
-      "description": "<p>That is why individual preparedness matters — but neighborhood preparedness is where we can really move the needle in Homestead. While a wildfire is impossible to predict, if a fire can be stopped from exploding from one house to another, the threat of neighborhood destruction goes down.</p><p>Two homeowners can create better vegetation separation along a shared boundary. Several can coordinate tree work or address a continuous fence or hedge. A group of homes can upgrade vulnerable vents, organize a cleanup day, create shared defensible space or collaborate on tree removal.</p><div class=\"key-line\">Individual improvements begin to reinforce one another. Resiliency improves.</div>",
+      "description": "<p>That is why individual preparedness matters - but neighborhood preparedness is where we can really move the needle in Homestead. While a wildfire is impossible to predict, if a fire can be stopped from exploding from one house to another, the threat of neighborhood destruction goes down.</p><p>Two homeowners can create better vegetation separation along a shared boundary. Several can coordinate tree work or address a continuous fence or hedge. A group of homes can upgrade vulnerable vents, organize a cleanup day, create shared defensible space or collaborate on tree removal.</p><div class=\"key-line\">Individual improvements begin to reinforce one another. Resiliency improves.</div>",
       "media": [
         {
           "type": "image",
           "src": "media/Wildfire Resilience Neighborhood Poster.png",
           "alt": "Poster: when most homes in a neighborhood take action, ember pathways between homes are interrupted; about 70 percent of homes protected is the tipping point for meaningful neighborhood risk reduction",
-          "caption": "Neighborhood participation compounds — around 70% of homes hardened is where the curve bends."
+          "caption": "Neighborhood participation compounds - around 70% of homes hardened is where the curve bends."
         }
       ],
       "mediaPosition": "right",
@@ -1448,7 +1448,7 @@
           "type": "image",
           "src": "media/Pixie_Hill_Eucalyptus_Forest.jpeg",
           "alt": "A hillside eucalyptus grove on the Pixie side of the valley, standing directly above Homestead Valley homes",
-          "caption": "Most blocks have a shared condition like this one — a problem no single homeowner can solve alone."
+          "caption": "Most blocks have a shared condition like this one - a problem no single homeowner can solve alone."
         }
       ],
       "mediaPosition": "right",
@@ -1475,7 +1475,7 @@
       "dummy": false,
       "navLabel": "Analyze My Block",
       "title": "Analyze My Own Block",
-      "description": "<p>So much of our risk is associated with the way our homes sit in their natural setting — the topography, the aspect, the prevailing winds, access and egress issues, and the close proximity of neighboring homes.</p><p>Which means the community-wide view only takes you so far. The next step is to zoom all the way in, to your street, with the same layers you have just been reading at the community scale.</p><div class=\"key-line\">Keep scrolling — the Block Explorer below lets you explore your particular block.</div>",
+      "description": "<p>So much of our risk is associated with the way our homes sit in their natural setting - the topography, the aspect, the prevailing winds, access and egress issues, and the close proximity of neighboring homes.</p><p>Which means the community-wide view only takes you so far. The next step is to zoom all the way in, to your street, with the same layers you have just been reading at the community scale.</p><div class=\"key-line\">Keep scrolling - the Block Explorer below lets you explore your particular block.</div>",
       "mapPosition": "none",
       "location": {
         "center": [
@@ -1500,7 +1500,7 @@
       "dummy": false,
       "navLabel": "Know Your Block Captain",
       "title": "Know Your Block Captain",
-      "description": "<p>Make sure your block has current contact information for all your neighbors. Know your neighbors — and whether older residents, people with limited mobility or others may need assistance preparing for or responding to an emergency.</p><div class=\"pro-tip\"><strong>Pro Tip: Print the List</strong>Each Block Captain has compiled a list of neighbors, including people living alone, elderly residents, and those needing assistance for whatever reason. Print this list. Know which neighbors need help, and in a shelter-in-place or evacuation order, try to check in.</div>",
+      "description": "<p>Make sure your block has current contact information for all your neighbors. Know your neighbors - and whether older residents, people with limited mobility or others may need assistance preparing for or responding to an emergency.</p><div class=\"pro-tip\"><strong>Pro Tip: Print the List</strong>Each Block Captain has compiled a list of neighbors, including people living alone, elderly residents, and those needing assistance for whatever reason. Print this list. Know which neighbors need help, and in a shelter-in-place or evacuation order, try to check in.</div>",
       "media": [
         {
           "type": "image",
@@ -1533,13 +1533,13 @@
       "dummy": false,
       "navLabel": "Walk the Block",
       "title": "Consider Making a Plan to Walk the Block Together",
-      "description": "<p>Look for shared vegetation, fence lines, open-space interfaces and other conditions that may affect several properties — or simply cooperate on tree removal.</p><div class=\"key-line\">If you back up to HVLT land, there are available funds to collaborate on eucalyptus removal.</div><p>And choose something achievable. One shared vulnerability. One shared project.</p>",
+      "description": "<p>Look for shared vegetation, fence lines, open-space interfaces and other conditions that may affect several properties - or simply cooperate on tree removal.</p><div class=\"key-line\">If you back up to HVLT land, there are available funds to collaborate on eucalyptus removal.</div><p>And choose something achievable. One shared vulnerability. One shared project.</p>",
       "media": [
         {
           "type": "image",
           "src": "media/Eucalyptus_Removal.jpeg",
           "alt": "Freshly cut eucalyptus stumps and stacked rounds on a roadside slope below a eucalyptus stand, with a traffic cone marking the work area",
-          "caption": "Eucalyptus removal on HVLT land — the kind of project neighbors fund and schedule together."
+          "caption": "Eucalyptus removal on HVLT land - the kind of project neighbors fund and schedule together."
         }
       ],
       "mediaPosition": "right",
@@ -1566,7 +1566,7 @@
       "dummy": false,
       "navLabel": "Help Is Available",
       "title": "Help Is Available to Get Started",
-      "description": "<p>Cost, physical limitations or simply not knowing where to begin can prevent people from acting.</p><div class=\"key-line\">You don't have to do it alone.</div><p>There are multiple sources of information on how to prepare for wildfire, including two very comprehensive story map projects recently published:</p><ul><li><a href=\"https://storymaps.arcgis.com/stories/a4f41c9b87a7406ebe67d0a45c68e973\" target=\"_blank\" rel=\"noopener\">Marin County Community Wildfire Protection Plan (CWPP) draft</a> — produced by the MWPA, a thorough overview of county-level risk and ongoing initiatives around defensible space priorities and projects across Marin.</li><li><a href=\"https://storymaps.arcgis.com/stories/399009c0b2c7461ea34c652b9e658772\" target=\"_blank\" rel=\"noopener\">Southern Marin Fire District story map</a> — specific to Southern Marin, with excellent risk mapping, potential fire mapping and evacuation planning information.</li></ul>",
+      "description": "<p>Cost, physical limitations or simply not knowing where to begin can prevent people from acting.</p><div class=\"key-line\">You don't have to do it alone.</div><p>There are multiple sources of information on how to prepare for wildfire, including two very comprehensive story map projects recently published:</p><ul><li><a href=\"https://storymaps.arcgis.com/stories/a4f41c9b87a7406ebe67d0a45c68e973\" target=\"_blank\" rel=\"noopener\">Marin County Community Wildfire Protection Plan (CWPP) draft</a> - produced by the MWPA, a thorough overview of county-level risk and ongoing initiatives around defensible space priorities and projects across Marin.</li><li><a href=\"https://storymaps.arcgis.com/stories/399009c0b2c7461ea34c652b9e658772\" target=\"_blank\" rel=\"noopener\">Southern Marin Fire District story map</a> - specific to Southern Marin, with excellent risk mapping, potential fire mapping and evacuation planning information.</li></ul>",
       "mapPosition": "none",
       "location": {
         "center": [
@@ -1590,7 +1590,7 @@
       "dummy": false,
       "navLabel": "Grants & Rebates",
       "title": "Grants, Rebates and Work Crews",
-      "description": "<p>Local, regional and state programs offer <a href=\"https://www.marinwildfire.org/resident-info/resident-grants\" target=\"_blank\" rel=\"noopener\">grants and rebates</a>.</p><p>Grants are subject to open and closed periods and have different requirements for award. Grants — and actual work teams — can be especially important for older residents, people with access or functional needs, and households for whom the cost or physical demands of the work create a barrier.</p><p>Southern Marin Fire District is also available to support targeted defensible space projects and to conduct updated inspections, including for property transfers and resales.</p>",
+      "description": "<p>Local, regional and state programs offer <a href=\"https://www.marinwildfire.org/resident-info/resident-grants\" target=\"_blank\" rel=\"noopener\">grants and rebates</a>.</p><p>Grants are subject to open and closed periods and have different requirements for award. Grants - and actual work teams - can be especially important for older residents, people with access or functional needs, and households for whom the cost or physical demands of the work create a barrier.</p><p>Southern Marin Fire District is also available to support targeted defensible space projects and to conduct updated inspections, including for property transfers and resales.</p>",
       "mapPosition": "none",
       "location": {
         "center": [
@@ -1613,14 +1613,14 @@
       "icon": "flame",
       "dummy": false,
       "navLabel": "Ember Ready",
-      "title": "Marin Wildfire Prevention Authority — The EmberReady Program",
-      "description": "<p>The MWPA has introduced a highly focused pilot program to upgrade home vents to a 1/8\" or smaller standard in select neighborhoods. Called <strong>EmberReady</strong>, it offers grant money and vetted contractors to help homeowners with home hardening. See <a href=\"https://firesafemarin.org/harden-your-home/fire-resistant-vents/\" target=\"_blank\" rel=\"noopener\">Fire Safe Marin on fire-resistant vents</a>.</p><p>Becoming EmberReady is a true partnership between the selected community, Marin Wildfire's EmberReady staff, and the local fire agency. Together we each play an important part that determines how successful the project will be in your community.</p><div class=\"key-line\">By implementing wildfire mitigation at a neighborhood scale, we maximize the benefit of risk reduction for all homes involved.</div><p>For Homestead Valley, our program will focus on upgrading vents with ember-resistant mesh — one of the most cost-effective ways of reducing the risk of home ignition. The Fire Department will provide direct assistance funds to reduce costs for participants. In addition, residents can expect discounts on materials and labor from participating contractors, with discounts increasing as more residents participate.</p>",
+      "title": "Marin Wildfire Prevention Authority - The EmberReady Program",
+      "description": "<p>The MWPA has introduced a highly focused pilot program to upgrade home vents to a 1/8\" or smaller standard in select neighborhoods. Called <strong>EmberReady</strong>, it offers grant money and vetted contractors to help homeowners with home hardening. See <a href=\"https://firesafemarin.org/harden-your-home/fire-resistant-vents/\" target=\"_blank\" rel=\"noopener\">Fire Safe Marin on fire-resistant vents</a>.</p><p>Becoming EmberReady is a true partnership between the selected community, Marin Wildfire's EmberReady staff, and the local fire agency. Together we each play an important part that determines how successful the project will be in your community.</p><div class=\"key-line\">By implementing wildfire mitigation at a neighborhood scale, we maximize the benefit of risk reduction for all homes involved.</div><p>For Homestead Valley, our program will focus on upgrading vents with ember-resistant mesh - one of the most cost-effective ways of reducing the risk of home ignition. The Fire Department will provide direct assistance funds to reduce costs for participants. In addition, residents can expect discounts on materials and labor from participating contractors, with discounts increasing as more residents participate.</p>",
       "media": [
         {
           "type": "image",
           "src": "media/Ember Ready Logo.png",
           "alt": "EmberReady program logo: a pine tree, a house and a flame inside a green border, with the tagline Ready for Embers, Prepared for Wildfire",
-          "caption": "EmberReady — Marin Wildfire Prevention Authority."
+          "caption": "EmberReady - Marin Wildfire Prevention Authority."
         }
       ],
       "mediaPosition": "right",
@@ -1646,8 +1646,8 @@
       "icon": "home",
       "dummy": false,
       "navLabel": "Safer From Wildfires",
-      "title": "California — Safer From Wildfires",
-      "description": "<p>California also offers grants through the <a href=\"https://www.kin.com/blog/california-safe-homes-act-grant-program/\" target=\"_blank\" rel=\"noopener\">Safer From Wildfire program</a> and other assistance for wildfire mitigation.</p><p><a href=\"https://www.insurance.ca.gov/01-consumers/200-wrr/Safer-from-Wildfires.cfm\" target=\"_blank\" rel=\"noopener\">Safer from Wildfires</a> is a ground-up approach to wildfire resilience with three layers of protection — for the structure, the immediate surroundings, and the community.</p><div class=\"key-line\">Following these achievable steps and documenting them can help you save money on your insurance.</div><p>Safer from Wildfires was created by an interagency partnership between Insurance Commissioner Ricardo Lara and the emergency response and readiness agencies in Governor Gavin Newsom's administration.</p>",
+      "title": "California - Safer From Wildfires",
+      "description": "<p>California also offers grants through the <a href=\"https://www.kin.com/blog/california-safe-homes-act-grant-program/\" target=\"_blank\" rel=\"noopener\">Safer From Wildfire program</a> and other assistance for wildfire mitigation.</p><p><a href=\"https://www.insurance.ca.gov/01-consumers/200-wrr/Safer-from-Wildfires.cfm\" target=\"_blank\" rel=\"noopener\">Safer from Wildfires</a> is a ground-up approach to wildfire resilience with three layers of protection - for the structure, the immediate surroundings, and the community.</p><div class=\"key-line\">Following these achievable steps and documenting them can help you save money on your insurance.</div><p>Safer from Wildfires was created by an interagency partnership between Insurance Commissioner Ricardo Lara and the emergency response and readiness agencies in Governor Gavin Newsom's administration.</p>",
       "mapPosition": "none",
       "location": {
         "center": [
@@ -1670,7 +1670,7 @@
       "icon": "shield",
       "dummy": false,
       "navLabel": "Wildfire Prepared Home",
-      "title": "IBHS — The Wildfire Prepared Home Standard",
+      "title": "IBHS - The Wildfire Prepared Home Standard",
       "description": "<p>The Institute for Business and Home Safety, an independent, nonprofit scientific research organization funded by the property insurance industry, has created the <a href=\"https://wildfireprepared.org/\" target=\"_blank\" rel=\"noopener\">Wildfire Prepared Home</a> standard.</p><p>The IBHS standards are stringent and ahead of the regulatory curve for existing homes. But if you are under threat of losing your homeowner's policy, facing a massive premium bump, or being relegated to the FAIR Plan, the Wildfire Prepared Home standard is a strong metric to aspire to.</p><div class=\"key-line\">Reaching it might just enable you to keep your homeowner's policy.</div>",
       "mapPosition": "none",
       "location": {
@@ -1700,7 +1700,7 @@
         {
           "type": "image",
           "src": "media/Resilient Neighborhoods Community Badge.png",
-          "alt": "Resilient Neighbors, Resilient Neighborhoods — Homestead Valley community badge",
+          "alt": "Resilient Neighbors, Resilient Neighborhoods - Homestead Valley community badge",
           "caption": "Resilient Neighbors. Resilient Neighborhoods."
         }
       ],
