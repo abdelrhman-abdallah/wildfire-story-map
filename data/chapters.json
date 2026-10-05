@@ -42,6 +42,16 @@
         }
       ]
     },
+    "communityCenter": {
+      "title": "Community Center",
+      "items": [
+        {
+          "label": "Homestead Valley Community Center",
+          "color": "#dd8a3e",
+          "swatch": "pin"
+        }
+      ]
+    },
     "contours": {
       "title": "Elevation Contours",
       "items": [
@@ -953,7 +963,8 @@
         "homesteadHighlight": true,
         "vegetation": false,
         "elevation": true,
-        "hillshade": true
+        "hillshade": true,
+        "communityCenter": true
       }
     },
     {
@@ -989,7 +1000,8 @@
         "homesteadHighlight": true,
         "vegetation": true,
         "elevation": false,
-        "hillshade": true
+        "hillshade": true,
+        "communityCenter": true
       }
     },
     {
@@ -1089,7 +1101,8 @@
         "vegetation": false,
         "elevation": false,
         "contours": true,
-        "streets": true
+        "streets": true,
+        "communityCenter": true
       }
     },
     {
@@ -1164,7 +1177,8 @@
         "homesteadHighlight": true,
         "vegetation": false,
         "elevation": false,
-        "wind": true
+        "wind": true,
+        "communityCenter": true
       }
     },
     {
@@ -1191,7 +1205,8 @@
         "homesteadHighlight": true,
         "vegetation": false,
         "elevation": false,
-        "bivariate": true
+        "bivariate": true,
+        "communityCenter": true
       }
     },
     {

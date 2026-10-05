@@ -65,7 +65,11 @@ const LEGEND_LAYER_IDS = {
   // setupScrollTriggers), but it gets no legend section: it carries no
   // classes, no values and nothing to decode - it's a shading treatment
   // applied to the layers below it, not a dataset a reader looks up.
-  hillshade: ["hillshade-relief"]
+  hillshade: ["hillshade-relief"],
+  // The Community Center - one landmark
+  communityCenter: [
+    "community-center-point"
+  ]
 };
 
 // --- Terrain shade overlay ("Multiply" without a blend mode) -------------
@@ -798,6 +802,90 @@ function themeColor(name, fallback) {
   return value || fallback;
 }
 
+// --- Community Center landmark ---
+const COMMUNITY_CENTER_POINT_URL = "data/home_stead_community_center.json";
+const COMMUNITY_CENTER_ICON_ID = "community-center-pin";
+
+function communityCenterColor() {
+  return themeColor("secondary", "#2c3e91");
+}
+
+// Draws a Material-style "place" teardrop into an offscreen canvas and hands
+// back raw RGBA for map.addImage().
+//
+// Rendered rather than shipped as an SDF or a PNG for one reason: it has to
+// be re-tintable. An SDF can be tinted via `icon-color`, but an SDF is
+// single-channel, so it would lose the white casing and the white centre dot
+// - and those are what keep the pin legible over the dark end of the
+// elevation ramp and the near-black corner of the bivariate surface. Drawing
+// it means a theme switch can just re-draw at the new colour (see
+// ensureCommunityCenterIcon).
+//
+// Geometry: a circle of radius R centred at (CX, CY) with the two tangent
+// lines from the tip at (CX, TIP_Y). The tangent points sit at
+// acos(R/d) either side of the centre->tip direction, which is what makes
+// the head meet the point with no crease.
+function createPinImage(color, scale) {
+  const W = 26;
+  const H = 34;
+  const CX = 13;
+  const CY = 13;
+  const R = 8;
+  const TIP_Y = 31;
+
+  const canvas = document.createElement("canvas");
+  canvas.width = W * scale;
+  canvas.height = H * scale;
+  const ctx = canvas.getContext("2d");
+  ctx.scale(scale, scale);
+
+  const d = TIP_Y - CY;
+  const theta = Math.acos(R / d);
+  // Canvas angles: 0 = +x, increasing clockwise on screen (y points down),
+  // so 90 deg = straight down = the direction of the tip.
+  const down = Math.PI / 2;
+  const startAngle = down + theta; // left tangent point
+  const endAngle = down - theta + Math.PI * 2; // right tangent point, the long way round (over the top)
+
+  ctx.beginPath();
+  ctx.moveTo(CX, TIP_Y);
+  ctx.arc(CX, CY, R, startAngle, endAngle);
+  ctx.closePath();
+
+  // White casing first, as a thick stroke under the fill, so the pin keeps a
+  // hard edge against dark fills without the outline eating into its shape.
+  ctx.lineJoin = "round";
+  ctx.strokeStyle = "#ffffff";
+  ctx.lineWidth = 3;
+  ctx.stroke();
+
+  ctx.fillStyle = color;
+  ctx.fill();
+
+  // Centre dot - the "places" read. White, not a knocked-out hole: a hole
+  // would show whatever fill is underneath and stop reading as a pin on the
+  // busier maps.
+  ctx.beginPath();
+  ctx.arc(CX, CY, 3, 0, Math.PI * 2);
+  ctx.fillStyle = "#ffffff";
+  ctx.fill();
+
+  return ctx.getImageData(0, 0, canvas.width, canvas.height);
+}
+
+// Adds the pin on first call, re-tints it on every call after that.
+// `pixelRatio: 2` tells MapLibre the bitmap is double-density, so the pin
+// lands at ~26x34 CSS px and stays crisp on retina.
+function ensureCommunityCenterIcon(map) {
+  if (!map) return;
+  const image = createPinImage(communityCenterColor(), 2);
+  if (map.hasImage(COMMUNITY_CENTER_ICON_ID)) {
+    map.updateImage(COMMUNITY_CENTER_ICON_ID, image);
+  } else {
+    map.addImage(COMMUNITY_CENTER_ICON_ID, image, { pixelRatio: 2 });
+  }
+}
+
 // Block Explorer outlines: secondary marks the selected block, accent the rest.
 function explorerBlockLineColor() {
   return [
@@ -822,12 +910,42 @@ function restyleMapForTheme() {
     setPaint("explorer-blocks-label", "text-color", themeColor("dark", "#1c1c1c"));
     setPaint("contours-label", "text-halo-color", themeColor("light", "#fdf6f0"));
     setPaint("explorer-contours-label", "text-halo-color", themeColor("light", "#fdf6f0"));
+    setPaint("community-center-fill", "fill-color", communityCenterColor());
+    setPaint("community-center-line", "line-color", communityCenterColor());
   });
+  // The pin is a drawn bitmap, not a paint property, so it has to be
+  // re-rendered at the new accent rather than re-set. Only the scroll map
+  // carries it - the Block Explorer is deliberately excluded (see
+  // chapters.json / the communityCenter layer key).
+  if (mapInstance && mapInstance.isStyleLoaded()) {
+    ensureCommunityCenterIcon(mapInstance);
+  }
+  updateCommunityCenterLegendSwatches();
   // Re-runs the boundary paint for whatever chapter is on screen, which is
   // what picks up the new primary for the Marin-context highlight.
   if (mapInstance && currentBoundaryChapter) {
     updateHomesteadBoundaryStyle(mapInstance, currentBoundaryChapter);
   }
+}
+
+// The Community Center legend rows are themed, so their swatch colours
+// cannot be baked into chapters.json the way the data ramps are. Same
+// approach as the homesteadHighlight swatch in updateHomesteadBoundaryStyle:
+// repaint from the live theme, scoped to #legend so the Block Explorer's own
+// legend (which renders the same data-layer attributes) is never touched.
+function updateCommunityCenterLegendSwatches() {
+  const color = communityCenterColor();
+  document
+    .querySelectorAll('#legend .legend-section[data-layer="communityCenter"] .legend-swatch')
+    .forEach((swatch) => {
+      if (swatch.classList.contains("legend-swatch-pin")) {
+        swatch.style.background = color;
+      } else if (swatch.classList.contains("legend-swatch-fill")) {
+        swatch.style.background = color;
+      } else {
+        swatch.style.borderTopColor = color;
+      }
+    });
 }
 
 // Switcher entry point: apply, persist, and restyle the already-built map.
@@ -1766,8 +1884,12 @@ function setupVideoPauseOnScrollOut() {
 // "line-dashed" a dashed one, both colored via item.color.
 function renderLegendItemHtml(item) {
   const swatchType = item.swatch || "fill";
+  // "pin" is a teardrop, so like "fill" its colour is a background, not a
+  // border-top - the line variants are the odd ones out here, not it.
   const swatchStyle =
-    swatchType === "fill" ? `background:${item.color}` : `border-top-color:${item.color}`;
+    swatchType === "fill" || swatchType === "pin"
+      ? `background:${item.color}`
+      : `border-top-color:${item.color}`;
   return `
     <div class="legend-item">
       <span class="legend-swatch legend-swatch-${swatchType}" style="${swatchStyle}"></span>
@@ -3133,6 +3255,53 @@ function initMap(chapters, layerBounds) {
 
     buildWindArrows(map, layerBounds.homestead);
 
+    // Community Center, added after everything else (including the boundary
+    // line and the wind arrows) so the landmark is never buried. Three
+    // layers, one on/off key - see LEGEND_LAYER_IDS.communityCenter.
+    //
+    // The polygon gets a white line casing under its themed outline for the
+    // same reason the pin does: these maps range from near-white (sparse
+    // vegetation) to near-black (the top elevation class and the dark corner
+    // of the bivariate surface), and a single-stroke outline legible on one
+    // disappears on the other.
+    ensureCommunityCenterIcon(map);
+
+    map.addLayer({
+      id: "community-center-line-casing",
+      type: "line",
+      source: "community-center-polygon",
+      layout: { visibility: "none" },
+      paint: { "line-color": "#ffffff", "line-width": 4, "line-opacity": 0.9 }
+    });
+    map.addLayer({
+      id: "community-center-line",
+      type: "line",
+      source: "community-center-polygon",
+      layout: { visibility: "none" },
+      paint: { "line-color": communityCenterColor(), "line-width": 2 }
+    });
+
+    map.addSource("community-center-point", {
+      type: "geojson",
+      data: COMMUNITY_CENTER_POINT_URL
+    });
+    map.addLayer({
+      id: "community-center-point",
+      type: "symbol",
+      source: "community-center-point",
+      layout: {
+        visibility: "none",
+        "icon-image": COMMUNITY_CENTER_ICON_ID,
+        // Anchored at the tip, which is where the coordinate actually is.
+        "icon-anchor": "bottom",
+        // This is a single landmark on a map that already has contour
+        // labels and street casings competing for space - it must never be
+        // the thing that gets dropped from the collision pass.
+        "icon-allow-overlap": true,
+        "icon-ignore-placement": true
+      }
+    });
+
     // Both after the addLayer calls above, because both inspect what actually
     // got added, and both before mapLayersReady flips - applyChapterToMap()
     // below reads layer state off LEGEND_LAYER_IDS.
@@ -3511,6 +3680,10 @@ async function bootstrap() {
   setupNavOffset(document.getElementById("header"), toolbar);
 
   renderLegendShell(config.legend);
+  // The Community Center swatches are themed, so they are painted from the
+  // live theme here rather than from chapters.json - same reason the
+  // homesteadHighlight swatch is painted in updateHomesteadBoundaryStyle().
+  updateCommunityCenterLegendSwatches();
   renderFooter(config.footer);
   initMap(config.chapters, layerBounds);
   setupVideoPauseOnScrollOut();

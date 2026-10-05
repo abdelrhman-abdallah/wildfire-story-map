@@ -2080,6 +2080,37 @@ body.image-modal-open {
   border-top-style: dotted;
 }
 
+/* Teardrop swatch for point landmarks (the Community Center pin) - the
+   same three-corner-round / one-corner-square trick rotated 45deg that
+   gives the map pin its silhouette, so the legend row reads as the symbol
+   it stands for rather than as another colour chip. The inner dot is the
+   ::after, matching the white centre createPinImage() draws.
+
+   Colour is set from the live theme in JS
+   (updateCommunityCenterLegendSwatches), not from chapters.json, because
+   this is a themed landmark rather than a data encoding. */
+.legend-swatch-pin {
+  width: 11px;
+  height: 11px;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  position: relative;
+  margin-left: 2px;
+  margin-right: 3px;
+}
+
+.legend-swatch-pin::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 4px;
+  height: 4px;
+  margin: -2px 0 0 -2px;
+  border-radius: 50%;
+  background: #fff;
+}
+
 /* Bivariate matrix symbology (renderMatrixSymbology()) - a 2D grid of
    colour cells with one axis per variable, so a reader decodes a map
    colour back into a PAIR of class values instead of matching it against
