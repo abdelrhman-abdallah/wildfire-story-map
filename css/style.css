@@ -578,7 +578,12 @@ body.map-pos-none #map {
 }
 
 /* MapLibre owns the marker element's `transform` (position + bearing), so
-   never set one here - size, colour and visibility only. */
+   never set one here - size, colour and visibility only. The drift
+   animation below gets around that by moving the inner <svg> instead: it
+   inherits the marker's rotation from its parent, so a plain translateY()
+   in the svg's own coordinate space slides the arrow along whichever
+   bearing MapLibre has rotated it to. Negative Y is the direction the
+   arrowhead points, which is downwind. */
 .wind-arrow {
   width: 2.6rem;
   height: 4.74rem;
@@ -595,6 +600,47 @@ body.map-pos-none #map {
   display: block;
   width: 100%;
   height: 100%;
+}
+
+/* Each arrow slides downwind and fades, on a loop, so the two fans read as
+   moving air rather than two static legends. buildWindArrows() gives every
+   arrow its own --wind-duration and a NEGATIVE --wind-delay, which starts it
+   part-way through the cycle - otherwise all eight would launch in lockstep
+   the moment the chapter scrolled in.
+
+   The prefers-reduced-motion guard here is load-bearing, not belt-and-braces
+   like the one on .toolbar-section-standalone. The global `reduce` block at
+   the end of this file neutralises animations by forcing
+   animation-iteration-count: 1, which for this keyframe set would run the
+   drift exactly once and leave every arrow parked on the 100% frame - i.e.
+   opacity: 0. The arrows would disappear entirely. Attaching the animation
+   only under `no-preference` means reduced-motion readers get them static
+   and fully opaque, which is the correct fallback. */
+@media (prefers-reduced-motion: no-preference) {
+  .wind-arrow.visible svg {
+    animation: wind-drift var(--wind-duration, 3.6s) linear infinite;
+    animation-delay: var(--wind-delay, 0s);
+  }
+}
+
+/* translateY moves the arrow along the heading MapLibre rotated its parent
+   to; the rotate() on top of it banks the arrow a few degrees through the
+   cycle so it follows the bend of its streamline instead of sliding down a
+   straight diagonal. Order matters: `translateY() rotate()` turns the arrow
+   about its own centre and THEN displaces it, which is what we want. The
+   reverse order would swing the travel direction too and the fan would
+   splay apart.
+
+   --wind-curl-in / --wind-curl-out are set per arrow by buildWindArrows()
+   and are signed, so each fan banks the way its own curve actually turns.
+   Only opacity is keyed at 22%/78% - transform is left to interpolate
+   straight through from 0% to 100%, which is what keeps the travel linear
+   while the fade happens at the ends. */
+@keyframes wind-drift {
+  0%   { transform: translateY(42%) rotate(var(--wind-curl-in, 0deg));   opacity: 0; }
+  22%  { opacity: 1; }
+  78%  { opacity: 1; }
+  100% { transform: translateY(-58%) rotate(var(--wind-curl-out, 0deg)); opacity: 0; }
 }
 
 .wind-arrow-diablo { color: var(--color-secondary); }

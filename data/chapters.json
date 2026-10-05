@@ -839,6 +839,7 @@
       "media": [
         {
           "type": "video",
+          "localSrc": "media/MN1.mp4",
           "alt": "Marshall Nau, Deputy Fire Marshal, on Southern Marin Fire District's home inspections and open space fuel management",
           "caption": "Marshall Nau - Southern Marin Fire District as a partner.",
           "pendingNote": "Raw interview supplied MN1.mp4 (980 MB) - too large to self-host. Upload to YouTube and add the URL to this item's youtubeUrl field in data/chapters.json."

@@ -37,7 +37,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Noto+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet" />
 
   <link href="https://unpkg.com/maplibre-gl@^4/dist/maplibre-gl.css" rel="stylesheet" />
-  <link href="css/style.css?v=37" rel="stylesheet" />
+  <link href="css/style.css?v=41" rel="stylesheet" />
 </head>
 <body>
 
@@ -65,10 +65,11 @@
       </div>
     </div>
     <!-- Key for the on-map wind arrows. The arrows themselves are MapLibre
-         markers pinned to real coordinates on the NE / SW flanks of the
-         homestead boundary - see buildWindArrows() in js/story.js. Both the
-         key and the arrows are shown/hidden per chapter via
-         chapter.layers.wind. -->
+         markers pinned to real coordinates, spaced along a curved streamline
+         per scenario and each rotated to that curve's local tangent, so they
+         drift the way the air actually bends through the valley - see
+         WIND_FLOWS / buildWindArrows() in js/story.js. Both the key and the
+         arrows are shown/hidden per chapter via chapter.layers.wind. -->
     <div class="wind-indicator" id="wind-indicator" aria-hidden="true">
       <span class="wind-key-item wind-key-diablo">Diablo Wind <small>offshore &middot; NE&rarr;SW</small></span>
       <span class="wind-key-item wind-key-reverse">Reverse Wind <small>onshore &middot; SW&rarr;NE</small></span>
@@ -96,6 +97,6 @@
   <footer id="footer"></footer>
 
   <script src="https://unpkg.com/maplibre-gl@^4/dist/maplibre-gl.js"></script>
-  <script src="js/story.js?v=37"></script>
+  <script src="js/story.js?v=41"></script>
 </body>
 </html>

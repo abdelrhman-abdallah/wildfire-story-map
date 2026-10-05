@@ -632,12 +632,87 @@ function updateThematicLayerStyle(map, chapter) {
 // LEGEND_LAYER_IDS/setMapLayerVisibility - but being markers (not a fixed
 // HTML overlay) they stay pinned to the ground as the reader pans and
 // zooms. All of them appear/disappear together on chapter.layers.wind.
+//
+// They also DRIFT: each arrow slides along its own heading and fades out,
+// looping, so the pair of fans animates like moving air. The brief asks for
+// this explicitly ("pulsing arrows ideally or slightly advancing in the
+// wind direction").
+//
+// The animation runs on the <svg> INSIDE the marker element, never on the
+// marker element itself. MapLibre writes `transform` on the marker root on
+// every render to place and rotate it, so any transform of ours there is
+// overwritten (and would fight the map's own positioning). The child is
+// untouched by MapLibre and inherits the parent's rotation for free, which
+// is what makes a plain translateY on it travel downwind: the SVG is drawn
+// pointing up (tip at y=1), so its local -Y is wherever the marker's
+// `rotation: bearing` is aimed.
 const WIND_ARROWS_PER_SIDE = 4;
 
-// How far to pull each arrow off the boundary toward the middle of the
-// valley, as a fraction of the distance to the bbox center. Keeps the whole
-// fan inside the frame a chapter's fitBounds() produces.
-const WIND_ARROW_INSET = 0.12;
+// --- Flow paths -----------------------------------------------------------
+// Each scenario is a STREAMLINE, not a block of parallel chevrons: a curve
+// laid across the homestead bbox with the arrows spaced along it, each one
+// rotated to the curve's local tangent. Real wind bends around terrain, and
+// a curve is what makes the two fans read as moving air rather than as two
+// sets of identical signposts.
+//
+// A curve is written as "enters on this bearing, leaves on that one" rather
+// than as raw control points, because the bearings ARE the editorial content
+// - they are the regional geography:
+//
+//   diablo   Offshore. Spills down off the Great Basin / Nevada side on a
+//            roughly SSW heading, then bends west as it drops to the coast
+//            and runs out over the Pacific. Enters ~205, leaves ~255.
+//   reverse  Onshore. Comes in off the Pacific heading ENE, then bends left
+//            and straightens to very nearly due north, up the corridor
+//            toward Mill Valley. Enters ~61, leaves ~6.
+//
+// Only the SHAPE is geographic. The arrows stay inside the homestead frame -
+// they annotate which way the air is going as it passes through here, they
+// are not a journey that begins in Nevada or ends in Mill Valley.
+//
+// `start` is normalised to the homestead bbox: [0,0] is its SW corner, [1,1]
+// its NE. Values outside 0..1 are deliberate, so a streamline looks like it
+// is passing THROUGH the valley rather than being born at its edge. The two
+// curves are placed on opposite diagonals - diablo sweeps the upper left,
+// reverse climbs the lower right - so that two contradictory wind scenarios
+// drawn at the same time never tangle with each other.
+// `reach` is the control-arm length in bbox HEIGHTS (not widths) - the
+// homestead bbox is about 1.6x wider than it is tall, so height is the
+// scarce axis and the one worth measuring against.
+const WIND_FLOWS = [
+  { side: "diablo", start: [0.58, 1.05], bearingIn: 208, bearingOut: 252, reach: 0.55 },
+  { side: "reverse", start: [0.45, -0.05], bearingIn: 58, bearingOut: 5, reach: 0.55 }
+];
+
+// How much of the curve's total bend an arrow sweeps through during one
+// drift cycle, as a fraction. An arrow travels about one of its own lengths
+// per cycle, which is a small slice of the whole streamline, so it should
+// turn by a correspondingly small slice of the whole bend - a few degrees.
+// That bank is what keeps the motion reading as curved rather than as a
+// rigid chevron sliding down a diagonal.
+const WIND_CURL_SHARE = 0.14;
+
+// --- Drift animation timing ---------------------------------------------
+// Each arrow slides along its own heading and fades at both ends, so the
+// fan reads as air moving through the valley rather than as eight pins
+// stuck in it. The motion itself is CSS (see @keyframes wind-drift); what
+// is set here is only the per-arrow PHASING, because that is what stops
+// eight identical loops from pulsing in unison and reading as a blinking
+// decoration.
+//
+// Two independent knobs, both written onto the marker element as custom
+// properties and inherited by the <svg> the animation actually runs on:
+//
+//   --wind-duration  spread slightly per arrow, so the fan drifts out of
+//                    phase over time instead of ticking like a metronome.
+//   --wind-delay     NEGATIVE, which starts each arrow already part-way
+//                    through its cycle. A positive delay would park every
+//                    arrow at its un-animated resting state and then have
+//                    them all lurch into motion as the chapter scrolls in;
+//                    negative means the fan is already mid-flight the
+//                    instant it becomes visible.
+const WIND_DRIFT_BASE_S = 3.6;
+const WIND_DRIFT_SPREAD_S = 0.22;
 
 const windArrowElements = [];
 
@@ -653,47 +728,101 @@ function windArrowSvg(gradientId) {
   </svg>`;
 }
 
-// Walks the two-segment run of the homestead bbox that faces into the wind
-// (north edge then east edge for Diablo, south then west for the reverse)
-// and spaces the arrows evenly along it, so each fan hugs the side of the
-// boundary the wind actually arrives from.
-function windFanPosition(bounds, upwind, along) {
+// Normalised bbox space is NOT square on the ground: at Marin's latitude a
+// degree of longitude is only ~0.79 of a degree of latitude, and the bbox
+// itself is not 1:1 either. `aspect` is the bbox's true ground width over its
+// true ground height, and it is what lets us author the curves in honest
+// compass bearings and still have each arrow look tangent to its curve once
+// MapLibre has projected it. Without this correction every bearing would be
+// sheared by the bbox's proportions and the arrows would visibly not line up
+// with the path they sit on.
+function windBboxAspect(bounds) {
   const [[west, south], [east, north]] = bounds;
-  const spanLng = east - west;
-  const spanLat = north - south;
-  const firstLegShare = spanLng / (spanLng + spanLat);
+  const midLat = ((south + north) / 2) * (Math.PI / 180);
+  return ((east - west) * Math.cos(midLat)) / (north - south);
+}
 
-  let lng;
-  let lat;
-  if (along < firstLegShare) {
-    const t = along / firstLegShare;
-    lng = upwind > 0 ? west + t * spanLng : east - t * spanLng;
-    lat = upwind > 0 ? north : south;
-  } else {
-    const t = (along - firstLegShare) / (1 - firstLegShare);
-    lng = upwind > 0 ? east : west;
-    lat = upwind > 0 ? north - t * spanLat : south + t * spanLat;
-  }
+// A step of length `len` (in bbox heights) along true bearing `deg`,
+// expressed in normalised bbox coordinates.
+function windBearingStep(deg, len, aspect) {
+  const rad = (deg * Math.PI) / 180;
+  return [(len * Math.sin(rad)) / aspect, len * Math.cos(rad)];
+}
 
-  return [
-    lng + WIND_ARROW_INSET * (west + spanLng / 2 - lng),
-    lat + WIND_ARROW_INSET * (south + spanLat / 2 - lat)
-  ];
+// Quadratic Bezier control points derived from the two bearings: P1 sits one
+// `reach` along the entry heading from P0, and P2 one reach further along the
+// exit heading. Building them this way guarantees the curve's start and end
+// tangents are exactly bearingIn and bearingOut, so the authored numbers mean
+// what they say.
+function windFlowControls(flow, aspect) {
+  const [x0, y0] = flow.start;
+  const [ix, iy] = windBearingStep(flow.bearingIn, flow.reach, aspect);
+  const [ox, oy] = windBearingStep(flow.bearingOut, flow.reach, aspect);
+  const p1 = [x0 + ix, y0 + iy];
+  return [flow.start, p1, [p1[0] + ox, p1[1] + oy]];
+}
+
+// Position AND heading at t along the curve, returned together because that
+// pairing is the whole point: each arrow must point the way the air is going
+// at the exact spot it is sitting. The derivative of a quadratic Bezier is a
+// straight lerp between its two control arms, so the tangent sweeps smoothly
+// from bearingIn to bearingOut as t runs 0 -> 1.
+function windFlowSample(flow, t, bounds, aspect) {
+  const [p0, p1, p2] = windFlowControls(flow, aspect);
+  const u = 1 - t;
+  const x = u * u * p0[0] + 2 * u * t * p1[0] + t * t * p2[0];
+  const y = u * u * p0[1] + 2 * u * t * p1[1] + t * t * p2[1];
+  const dx = 2 * u * (p1[0] - p0[0]) + 2 * t * (p2[0] - p1[0]);
+  const dy = 2 * u * (p1[1] - p0[1]) + 2 * t * (p2[1] - p1[1]);
+
+  const [[west, south], [east, north]] = bounds;
+  return {
+    lngLat: [west + x * (east - west), south + y * (north - south)],
+    // dx is un-sheared back into ground units before being read as a
+    // bearing, the exact inverse of what windBearingStep() applied.
+    bearing: (((Math.atan2(dx * aspect, dy) * 180) / Math.PI) + 360) % 360
+  };
 }
 
 function buildWindArrows(map, bounds) {
   if (!bounds) return;
 
-  [
-    { side: "diablo", bearing: 225, upwind: 1 },
-    { side: "reverse", bearing: 45, upwind: -1 }
-  ].forEach(({ side, bearing, upwind }) => {
+  const aspect = windBboxAspect(bounds);
+
+  WIND_FLOWS.forEach((flow) => {
+    // Signed, so an arrow banks the way its own streamline actually turns:
+    // diablo bends right (205 -> 255), reverse bends left (61 -> 6).
+    const curl = (flow.bearingOut - flow.bearingIn) * WIND_CURL_SHARE;
+
     for (let i = 0; i < WIND_ARROWS_PER_SIDE; i++) {
-      const [lng, lat] = windFanPosition(bounds, upwind, (i + 0.5) / WIND_ARROWS_PER_SIDE);
+      // Half-step in from each end, so the fan is spread along the curve
+      // rather than bunched at its tips.
+      const t = (i + 0.5) / WIND_ARROWS_PER_SIDE;
+      const { lngLat, bearing } = windFlowSample(flow, t, bounds, aspect);
 
       const el = document.createElement("div");
-      el.className = `wind-arrow wind-arrow-${side}`;
-      el.innerHTML = windArrowSvg(`wind-grad-${side}-${i}`);
+      el.className = `wind-arrow wind-arrow-${flow.side}`;
+      el.innerHTML = windArrowSvg(`wind-grad-${flow.side}-${i}`);
+
+      // The two fans are half a step out of phase with each other as well
+      // as within themselves - they sit on opposite sides of the valley
+      // pointing opposite ways, and syncing them would read as one pulsing
+      // graphic rather than two independent wind scenarios.
+      // The quarter/three-quarter offsets keep the two fans half a step
+      // apart AND keep every phase off zero - a phase of exactly 0 is the
+      // one value that defeats the negative delay, parking that arrow at
+      // the 0% keyframe (opacity 0) so it alone fades up from nothing while
+      // its neighbours are already in flight.
+      const duration = WIND_DRIFT_BASE_S + i * WIND_DRIFT_SPREAD_S;
+      const phase = (i + (flow.side === "reverse" ? 0.75 : 0.25)) / WIND_ARROWS_PER_SIDE;
+      el.style.setProperty("--wind-duration", `${duration.toFixed(2)}s`);
+      el.style.setProperty("--wind-delay", `${(-phase * duration).toFixed(2)}s`);
+
+      // Straddles the arrow's static tangent rather than starting from it, so
+      // the mid-point of the drift is the heading the curve actually has at
+      // this spot and the bank reads as following through the turn.
+      el.style.setProperty("--wind-curl-in", `${(-curl / 2).toFixed(2)}deg`);
+      el.style.setProperty("--wind-curl-out", `${(curl / 2).toFixed(2)}deg`);
 
       new maplibregl.Marker({
         element: el,
@@ -701,7 +830,7 @@ function buildWindArrows(map, bounds) {
         rotationAlignment: "map",
         pitchAlignment: "map"
       })
-        .setLngLat([lng, lat])
+        .setLngLat(lngLat)
         .addTo(map);
 
       windArrowElements.push(el);
@@ -910,8 +1039,6 @@ function restyleMapForTheme() {
     setPaint("explorer-blocks-label", "text-color", themeColor("dark", "#1c1c1c"));
     setPaint("contours-label", "text-halo-color", themeColor("light", "#fdf6f0"));
     setPaint("explorer-contours-label", "text-halo-color", themeColor("light", "#fdf6f0"));
-    setPaint("community-center-fill", "fill-color", communityCenterColor());
-    setPaint("community-center-line", "line-color", communityCenterColor());
   });
   // The pin is a drawn bitmap, not a paint property, so it has to be
   // re-rendered at the new accent rather than re-set. Only the scroll map
@@ -938,9 +1065,10 @@ function updateCommunityCenterLegendSwatches() {
   document
     .querySelectorAll('#legend .legend-section[data-layer="communityCenter"] .legend-swatch')
     .forEach((swatch) => {
-      if (swatch.classList.contains("legend-swatch-pin")) {
-        swatch.style.background = color;
-      } else if (swatch.classList.contains("legend-swatch-fill")) {
+      if (
+        swatch.classList.contains("legend-swatch-pin") ||
+        swatch.classList.contains("legend-swatch-fill")
+      ) {
         swatch.style.background = color;
       } else {
         swatch.style.borderTopColor = color;
@@ -3256,30 +3384,13 @@ function initMap(chapters, layerBounds) {
     buildWindArrows(map, layerBounds.homestead);
 
     // Community Center, added after everything else (including the boundary
-    // line and the wind arrows) so the landmark is never buried. Three
-    // layers, one on/off key - see LEGEND_LAYER_IDS.communityCenter.
+    // line and the wind arrows) so the landmark is never buried.
     //
-    // The polygon gets a white line casing under its themed outline for the
-    // same reason the pin does: these maps range from near-white (sparse
-    // vegetation) to near-black (the top elevation class and the dark corner
-    // of the bivariate surface), and a single-stroke outline legible on one
-    // disappears on the other.
+    // The pin carries a white casing because these maps range from near-white
+    // (sparse vegetation) to near-black (the top elevation class and the dark
+    // corner of the bivariate surface), and a single-stroke mark legible on
+    // one disappears on the other.
     ensureCommunityCenterIcon(map);
-
-    map.addLayer({
-      id: "community-center-line-casing",
-      type: "line",
-      source: "community-center-polygon",
-      layout: { visibility: "none" },
-      paint: { "line-color": "#ffffff", "line-width": 4, "line-opacity": 0.9 }
-    });
-    map.addLayer({
-      id: "community-center-line",
-      type: "line",
-      source: "community-center-polygon",
-      layout: { visibility: "none" },
-      paint: { "line-color": communityCenterColor(), "line-width": 2 }
-    });
 
     map.addSource("community-center-point", {
       type: "geojson",
