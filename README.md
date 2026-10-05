@@ -211,7 +211,7 @@ scroll past it.
 - `"full"` — panel takes the whole viewport width and the text card floats
   on top of it. For media too wide to read in a half-viewport panel: the
   valley panoramas (11800 px and 12554 px) and the full-page posters.
-  Currently only `welcome` uses it.
+  Currently only `section1-built-by-neighbors` uses it.
 - `"none"` — panel fades out, text card centres at the wider measure.
 
 The default is **media-aware**, which matters more than it sounds: a chapter

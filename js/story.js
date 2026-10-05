@@ -1417,12 +1417,11 @@ function renderChapters(chapters) {
 
   // Block Explorer (see renderExplorerSection() below) isn't a narrative
   // chapter - it's an interactive detour dropped in right after "Analyze My
-  // Own Block" (section1-state6-block), the chapter that hands the reader off
-  // to it explicitly, and so it lands at the end of Section 1, just before the
-  // story moves on to how homes ignite. It's a plain in-flow section, not a
-  // `.chapter`, so it never enters the shared-map IntersectionObserver/docking
-  // system - see initExplorerObserver().
-  const anchorChapter = document.getElementById("section1-state6-block");
+  // Own Block" (section7-analyze-block), the chapter that hands the reader off
+  // to it explicitly. It's a plain in-flow section, not a `.chapter`, so it
+  // never enters the shared-map IntersectionObserver/docking system - see
+  // initExplorerObserver().
+  const anchorChapter = document.getElementById("section7-analyze-block");
   const explorerSection = renderExplorerSection();
   if (anchorChapter) {
     anchorChapter.insertAdjacentElement("afterend", explorerSection);
@@ -1450,31 +1449,21 @@ function renderChapters(chapters) {
 // hardcoded per-chapter list, so new "section1-*"/"section2-*" chapters
 // automatically land in the right group.
 const SECTION_LABELS = {
-  orient: "Get Oriented",
-  resilience: "Not Starting From Scratch",
-  section1: "What Wildfire Means Here",
-  section2: "How Homes Ignite",
-  reduce: "Reduce Your Risk",
-  together: "Work Together",
-  history: "Our History",
-  closing: "Take Action"
+  section1: "Built By Neighbors",
+  section2: "Vision & Stewardship",
+  section3: "Culture of Preparedness",
+  section4: "Wildfire Here",
+  section5: "Where Do I Start?",
+  section6: "Defensible Space & Hardening",
+  section7: "Start With Your Block",
+  section8: "Help Is Available"
 };
 
+// Anything that isn't a "sectionN-*" chapter (currently just the hero title
+// screen) falls into section 1, which is where it sits on the page.
 function sectionIdFor(chapter) {
-  if (chapter.id.startsWith("resilience")) return "resilience";
-  if (chapter.id.startsWith("section1")) return "section1";
-  if (chapter.id.startsWith("section2")) return "section2";
-  // Sections 3 (two strategies) and 4 (defensible-space zones) are two
-  // narrative sections in the design brief, but both are "how do I reduce
-  // risk on my own property" content - grouped under one toolbar pill so
-  // the top row doesn't grow a pill per source-document section.
-  if (chapter.id.startsWith("section3") || chapter.id.startsWith("section4")) return "reduce";
-  // Sections 5 (prioritize) and 6 (neighborhood) are both about acting
-  // beyond a single fix-it list - together under one pill.
-  if (chapter.id.startsWith("section5") || chapter.id.startsWith("section6")) return "together";
-  if (chapter.id.startsWith("section7")) return "history";
-  if (chapter.id.startsWith("section8") || chapter.id === "see-it-in-motion" || chapter.id === "take-action") return "closing";
-  return "orient";
+  const match = /^(section[1-8])-/.exec(chapter.id);
+  return match ? match[1] : "section1";
 }
 
 // Preserves first-appearance order (chapters.json order), grouping chapters
@@ -1499,14 +1488,14 @@ function scrollToChapter(id) {
 }
 
 // Clicking a top-level toolbar section pill normally jumps to that
-// section's first chapter (see renderToolbar() below) - but for "Get
-// Oriented" that first chapter is the full-bleed hero/title screen, which
-// just re-scrolls to the very top of the page instead of anywhere useful.
-// This override sends it straight to the "where Homestead Valley sits"
-// chapter instead. Add more entries here if another section ever needs
-// its pill to land somewhere other than its first chapter.
+// section's first chapter (see renderToolbar() below) - but for section 1
+// that first chapter is the full-bleed hero/title screen, which just
+// re-scrolls to the very top of the page instead of anywhere useful. This
+// override sends it to the first real chapter instead. Add more entries
+// here if another section ever needs its pill to land somewhere other than
+// its first chapter.
 const SECTION_NAV_OVERRIDES = {
-  orient: "welcome"
+  section1: "section1-built-by-neighbors"
 };
 
 // The Block Explorer gets a tab of its own, even though it is not a
