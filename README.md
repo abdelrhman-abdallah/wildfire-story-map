@@ -63,20 +63,20 @@ surface treatment, the hero scrim and the nav — so each one is defined in
 two places, described under *Where a theme lives* below.
 
 ```json
-"activeTheme": "ember",
+"activeTheme": "serpintine",
 "themes": {
   "ember": {
     "label": "Ember",
     "colors": {
-      "primary": "#c0392b",
-      "secondary": "#e67e22",
-      "accent": "#2c3e91",
-      "dark": "#1c1c1c",
-      "light": "#fdf6f0"
+      "primary": "#4ca08c",
+      "secondary": "#dd8a3e",
+      "accent": "#5f9ec9",
+      "dark": "#0d1917",
+      "light": "#e9f1ee"
     },
     "fonts": {
-      "heading": "'Poppins', 'Segoe UI', sans-serif",
-      "body": "'Noto Serif', Georgia, serif"
+      "heading": "'Chivo', 'Segoe UI', sans-serif",
+      "body": "'Literata', Georgia, serif"
     },
     "fontsHref": "https://fonts.googleapis.com/css2?family=Poppins..."
   }
@@ -84,16 +84,9 @@ two places, described under *Where a theme lives* below.
 ```
 
 | Theme | What it is for | Primary / Secondary / Accent | Fonts |
-| --- | --- | --- | --- |
-| `ember` | The original wildfire red, on a warm sunlit paper | `#c0392b` `#e67e22` `#2c3e91` | Poppins / Noto Serif |
-| `fog` | The living landscape. All the chrome is desaturated, so the only saturated colour on screen is map data | `#3a5c4c` `#7f8f73` `#3f6480` | Archivo / Newsreader |
 | `serpentine` | Dark, for presenting to a room with the lights down | `#4ca08c` `#dd8a3e` `#5f9ec9` | Chivo / Literata |
-| `fieldbook` | The assessment artifact: a white sheet on manila, faintly ruled | `#1c6b8c` `#c2691f` `#44565f` | IBM Plex Sans Condensed / IBM Plex Serif |
 
-`fog` and `fieldbook` hold their colour back on purpose. The page is
-mostly a map of real vegetation, elevation and road data, and a saturated
-interface competes with it for the reader's eye. `serpentine` exists
-because this gets shown at community meetings on a projector, where a
+ `serpentine` existsbecause this gets shown at community meetings on a projector, where a
 bright page is the wrong thing in the room.
 
 **Which role goes where.** `primary` is the nav marker and the narrative
@@ -338,10 +331,10 @@ key off the same `"csa14"` source name either way.
 `data/chapters.json` and the `.geojson` files are loaded via `fetch()`,
 which browsers block under `file://` (i.e. double-clicking `index.html`
 directly won't work — the page will look empty). Serve the folder over
-local HTTP instead, e.g. from this folder:
+local HTTP instead, using `serve.py` in the repo root (one level up):
 
 ```
-python -m http.server 8765
+python serve.py 8765 storymap-prototype
 ```
 
 then open `http://localhost:8765/`.

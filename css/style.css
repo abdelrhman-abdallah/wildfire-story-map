@@ -12,34 +12,37 @@
                           radius, near-flat.
 
    Everything themeable is a custom property. :root below carries the
-   full default set (= the Ember theme); each html[data-theme="..."]
-   block further down overrides only what differs. applyTheme() in
-   js/story.js sets that attribute and additionally inline-styles the
-   five map-facing --color-* values from data/chapters.json, which is
-   why those five are the only ones duplicated between the two files.
-   Inline styles win over these blocks, so chapters.json stays
-   authoritative for them.
+   full set, which IS Serpentine - the one theme the page ships with.
+   applyTheme() in js/story.js inline-styles the five map-facing
+   --color-* values from data/chapters.json, which is why those five are
+   the only ones duplicated between the two files. Inline styles win
+   over this block, so chapters.json stays authoritative for them.
+
+   The switching machinery is still in place: applyTheme() sets
+   html[data-theme], so a second theme is added by registering it in
+   chapters.json "themes" and adding an html[data-theme="..."] block
+   here that overrides only what differs from Serpentine.
 ===================================================================== */
 
 :root {
   /* --- Brand five. Also inline-styled from chapters.json at runtime, and
      read back by themeColor() for MapLibre paint properties, which cannot
      consume custom properties. --color-dark must stay dark enough to label
-     a light basemap, and --color-light light enough to halo one, in EVERY
-     theme - including the dark one. */
-  --color-primary: #c0392b;
-  --color-secondary: #e67e22;
-  --color-accent: #2c3e91;
-  --color-dark: #1c1c1c;
-  --color-light: #fdf6f0;
+     the light CARTO Positron basemap and --color-light light enough to halo
+     it - note that holds even though the page chrome itself is dark. */
+  --color-primary: #4ca08c;
+  --color-secondary: #dd8a3e;
+  --color-accent: #5f9ec9;
+  --color-dark: #0d1917;
+  --color-light: #e9f1ee;
 
-  --font-heading: "Poppins", "Segoe UI", sans-serif;
-  --font-body: "Noto Serif", Georgia, serif;
+  --font-heading: "Chivo", "Segoe UI", sans-serif;
+  --font-body: "Literata", Georgia, serif;
 
-  /* Serif body copy wants more leading than a sans. Themes that pair a
-     sans body override this downward. */
-  --body-leading: 1.68;
-  --display-tracking: -0.015em;
+  /* Serif body copy wants more leading than a sans, and light-on-dark text
+     wants a little more again. */
+  --body-leading: 1.74;
+  --display-tracking: -0.018em;
   --display-weight: 600;
 
   /* Combined rendered height of #header + #toolbar, kept in sync at runtime
@@ -64,25 +67,30 @@
   --map-frame-pad: 1.15rem;
   --map-frame-radius: 6px;
 
-  /* --- Page */
-  --page-bg: linear-gradient(180deg, #fbf5ef 0%, #f6ece3 100%);
-  --page-bg-color: #fbf5ef;
-  --map-bed: #e7ded3;
-  --sunk-bg: #f4ebe2;
+  /* --- Page. Serpentine: Marin's serpentinite bedrock. Dark, because the
+     Safety Committee presents this at community meetings with the lights
+     down. Dark chrome over the light CARTO Positron basemap is the
+     conventional pairing, so map legibility is unaffected. */
+  --page-bg: linear-gradient(180deg, #132220 0%, #0c1716 60%, #091211 100%);
+  --page-bg-color: #0c1716;
+  --map-bed: #0f1b1a;
+  --sunk-bg: #101d1b;
 
   /* --- Ink */
-  --ink: #2a2118;
-  --ink-soft: #6b5a4c;
-  --ink-faint: #8d7c6d;
-  --ink-on-fill: #fffaf6;
-  --rule: rgba(60, 26, 12, 0.14);
+  --ink: #dde8e5;
+  --ink-soft: #9bb0aa;
+  --ink-faint: #768c86;
+  --ink-on-fill: #08110f;
+  --rule: rgba(214, 234, 228, 0.16);
 
   /* --- Voice */
-  --voice-bg: rgba(255, 253, 251, 0.965);
-  --voice-radius: 4px;
-  --voice-edge: var(--color-secondary);
+  --voice-bg: rgba(19, 34, 32, 0.93);
+  --voice-radius: 3px;
+  --voice-edge: var(--color-primary);
   --voice-edge-w: 3px;
-  --voice-shadow: 0 1px 0 rgba(60, 26, 12, 0.10), 0 20px 42px -24px rgba(60, 26, 12, 0.55);
+  /* The hairline ring is primary at 18%, so it tracks whatever
+     chapters.json sets rather than restating the hex. */
+  --voice-shadow: 0 0 0 1px color-mix(in srgb, var(--color-primary) 18%, transparent), 0 28px 52px -26px rgba(0, 0, 0, 0.8);
   /* Two reading measures for the text card, picked by how much of the
      screen the card has to itself.
 
@@ -99,145 +107,6 @@
   --voice-measure-wide: 38rem;
 
   /* --- Instrument */
-  --panel-bg: rgba(255, 255, 255, 0.96);
-  --panel-ink: #2a2118;
-  --panel-rule: rgba(60, 26, 12, 0.16);
-  --panel-radius: 3px;
-  --panel-shadow: 0 2px 10px -4px rgba(60, 26, 12, 0.42);
-  --panel-hover: rgba(60, 26, 12, 0.06);
-
-  /* --- Nav */
-  --nav-bg: var(--color-primary);
-  --nav-ink: #fff6f1;
-  --nav-ink-soft: rgba(255, 246, 241, 0.72);
-  --nav-sub-bg: #241a16;
-  --nav-rule: rgba(255, 255, 255, 0.18);
-  --nav-marker: var(--color-secondary);
-  /* Ink for text sitting ON --nav-marker (the Block Explorer call-to-action
-     in the toolbar). It cannot be a shared token: --nav-marker is orange
-     in Ember/Fieldbook and red in Fog/Serpentine, and no single ink clears
-     4.5:1 on both. Here: #241a16 on #e67e22 = 5.98:1. */
-  --nav-cta-ink: #241a16;
-
-  /* --- Hero. Warm smoke and ember light rising from below, rather than a
-     neutral black wash.
-
-     Every theme's scrim has to be genuinely dark from ~40% downward: the
-     hero copy is anchored bottom-left and runs from roughly 30% to 90% of
-     the hero's height, all of it set in near-white. A scrim that only
-     darkens in the last few percent looks fine as a gradient and leaves
-     the lede sitting on whatever the photograph happens to be doing. */
-  --hero-scrim: linear-gradient(183deg, rgba(26, 14, 8, 0.15) 0%, rgba(30, 15, 8, 0.52) 42%, rgba(60, 22, 10, 0.78) 72%, rgba(84, 28, 11, 0.88) 100%);
-  --hero-ink: #fffaf6;
-
-  /* --- key-line: the story's pull-quote. 44 instances across
-     data/chapters.json - the most repeated structural device on the page. */
-  --keyline-tint: transparent;
-  --keyline-edge: var(--color-primary);
-  --keyline-ink: #2a2118;
-  --keyline-size: 1.14rem;
-
-  --footer-bg: #241a16;
-  --footer-ink: #f6e8de;
-
-  /* --- Signal. --risk is held in reserve for alerts and review
-     scaffolding; it is deliberately not used for chrome. */
-  --risk: #b4332a;
-  --focus: var(--color-accent);
-  --scrim: rgba(28, 16, 10, 0.55);
-  --backdrop: rgba(22, 12, 7, 0.93);
-}
-
-/* =====================================================================
-   Fog & Chaparral - the Marin marine layer over Mount Tam. All chrome is
-   desaturated to near-grey on purpose, so the only saturated colour on
-   screen is map data: the vegetation classes, the hypsometric ramp, the
-   bivariate matrix. The brand green is spent on wayfinding (active pill,
-   boundary highlight), never on surfaces.
-===================================================================== */
-html[data-theme="fog"] {
-  --body-leading: 1.72;
-  --display-tracking: -0.02em;
-
-  --page-bg: radial-gradient(130% 72% at 50% -12%, #ffffff 0%, #eef2f0 55%, #e5ebe9 100%);
-  --page-bg-color: #eef2f0;
-  --map-bed: #dde4e2;
-  --sunk-bg: #e9eeec;
-
-  --ink: #1e2622;
-  --ink-soft: #5b6861;
-  --ink-faint: #86918e;
-  --ink-on-fill: #f6faf8;
-  --rule: rgba(33, 42, 38, 0.15);
-
-  --voice-bg: rgba(252, 254, 253, 0.97);
-  --voice-radius: 2px;
-  --voice-edge: var(--color-primary);
-  --voice-edge-w: 3px;
-  --voice-shadow: 0 1px 0 rgba(33, 42, 38, 0.10), 0 24px 46px -28px rgba(33, 42, 38, 0.48);
-
-  --panel-bg: rgba(255, 255, 255, 0.95);
-  --panel-ink: #1e2622;
-  --panel-rule: rgba(33, 42, 38, 0.22);
-  --panel-radius: 2px;
-  --panel-shadow: 0 0 0 1px rgba(33, 42, 38, 0.05);
-  --panel-hover: rgba(33, 42, 38, 0.06);
-
-  --nav-bg: #1d2521;
-  --nav-ink: #eef3f1;
-  --nav-ink-soft: rgba(238, 243, 241, 0.70);
-  --nav-sub-bg: #2a342f;
-  --nav-rule: rgba(238, 243, 241, 0.16);
-  --nav-marker: var(--color-primary);
-  /* #f6faf8 on #c0392b = 5.23:1 */
-  --nav-cta-ink: #f6faf8;
-
-  /* Fog on top, dark where the title sits. The pale band is kept thin and
-     weak - at 0.42 it bleached the whole upper half of the cover video. */
-  --hero-scrim: linear-gradient(180deg, rgba(226, 233, 232, 0.22) 0%, rgba(96, 114, 110, 0.34) 26%, rgba(28, 38, 35, 0.70) 62%, rgba(15, 23, 21, 0.90) 100%);
-  --hero-ink: #f4f8f6;
-
-  --keyline-tint: transparent;
-  --keyline-edge: var(--color-primary);
-  --keyline-ink: #19211d;
-
-  --footer-bg: #1d2521;
-  --footer-ink: #e7eeeb;
-
-  --risk: #a8372c;
-  --focus: #3f6480;
-  --scrim: rgba(24, 33, 30, 0.55);
-  --backdrop: rgba(16, 23, 21, 0.94);
-}
-
-/* =====================================================================
-   Serpentine - Marin's serpentinite bedrock. The dark theme, and the
-   reason it exists: the Safety Committee presents this at community
-   meetings with the lights down. Dark chrome over the light CARTO
-   Positron basemap is the conventional pairing, so map legibility is
-   unaffected.
-===================================================================== */
-html[data-theme="serpentine"] {
-  --body-leading: 1.74;
-  --display-tracking: -0.018em;
-
-  --page-bg: linear-gradient(180deg, #132220 0%, #0c1716 60%, #091211 100%);
-  --page-bg-color: #0c1716;
-  --map-bed: #0f1b1a;
-  --sunk-bg: #101d1b;
-
-  --ink: #dde8e5;
-  --ink-soft: #9bb0aa;
-  --ink-faint: #768c86;
-  --ink-on-fill: #08110f;
-  --rule: rgba(214, 234, 228, 0.16);
-
-  --voice-bg: rgba(19, 34, 32, 0.93);
-  --voice-radius: 3px;
-  --voice-edge: var(--color-primary);
-  --voice-edge-w: 3px;
-  --voice-shadow: 0 0 0 1px rgba(76, 160, 140, 0.18), 0 28px 52px -26px rgba(0, 0, 0, 0.8);
-
   --panel-bg: rgba(14, 26, 25, 0.93);
   --panel-ink: #dfeae7;
   --panel-rule: rgba(214, 234, 228, 0.20);
@@ -245,28 +114,43 @@ html[data-theme="serpentine"] {
   --panel-shadow: 0 10px 26px -14px rgba(0, 0, 0, 0.85);
   --panel-hover: rgba(214, 234, 228, 0.10);
 
+  /* --- Nav */
   --nav-bg: #081312;
   --nav-ink: #e4efec;
   --nav-ink-soft: rgba(228, 239, 236, 0.68);
   --nav-sub-bg: #0f1d1b;
   --nav-rule: rgba(228, 239, 236, 0.14);
   --nav-marker: var(--color-primary);
-  /* Deliberately NOT --ink-on-fill, which is near-black in this theme and
-     would land at 3.67:1 on the red marker. #eaf3f0 on #c0392b = 4.90:1. */
-  --nav-cta-ink: #eaf3f0;
+  /* Ink for text sitting ON --nav-marker (the Block Explorer call-to-action
+     in the toolbar), which is the brand teal rather than a page surface, so
+     it cannot just use --ink. Near-black is the legible choice against it:
+     #08110f on #4ca08c = 6.12:1, where the near-white this used to carry
+     managed only 2.77:1. */
+  --nav-cta-ink: #08110f;
 
+  /* --- Hero.
+     The scrim has to be genuinely dark from ~40% downward: the hero copy is
+     anchored bottom-left and runs from roughly 30% to 90% of the hero's
+     height, all of it set in near-white. A scrim that only darkens in the
+     last few percent looks fine as a gradient and leaves the lede sitting
+     on whatever the photograph happens to be doing. */
   --hero-scrim: radial-gradient(135% 100% at 50% 8%, rgba(8, 19, 18, 0.12) 0%, rgba(8, 19, 18, 0.58) 45%, rgba(5, 13, 12, 0.88) 78%, rgba(4, 10, 9, 0.95) 100%);
   --hero-ink: #ecf4f1;
 
-  /* Pure typographic weight needs a little help light-on-dark, so this is
-     the one theme where the pull-quote carries a faint panel. */
-  --keyline-tint: rgba(76, 160, 140, 0.10);
+  /* --- key-line: the story's pull-quote. 44 instances across
+     data/chapters.json - the most repeated structural device on the page.
+     Pure typographic weight needs a little help light-on-dark, so the
+     quote carries a faint panel in primary as well as the hung edge. */
+  --keyline-tint: color-mix(in srgb, var(--color-primary) 10%, transparent);
   --keyline-edge: var(--color-primary);
   --keyline-ink: #eaf3f0;
+  --keyline-size: 1.14rem;
 
   --footer-bg: #081312;
   --footer-ink: #dbe8e4;
 
+  /* --- Signal. --risk is held in reserve for alerts and review
+     scaffolding; it is deliberately not used for chrome. */
   --risk: #e2604a;
   --focus: #7fc9b6;
   --scrim: rgba(5, 13, 12, 0.62);
@@ -275,71 +159,6 @@ html[data-theme="serpentine"] {
   /* Tells the UA to render scrollbars and form controls dark too, so the
      window frame does not stay light around a dark page. */
   color-scheme: dark;
-}
-
-/* =====================================================================
-   Fieldbook - the artifact this project started as: the 2015 Firewise
-   assessment in media/. Defensible-space Zone 0 / 5 ft / 30 ft / 100 ft
-   is genuinely a measured sequence, so ruled lines and tabular numerals
-   are content here rather than decoration. A white sheet lying on
-   manila, not a column of newsprint.
-===================================================================== */
-html[data-theme="fieldbook"] {
-  --body-leading: 1.66;
-  --display-tracking: -0.005em;
-  --display-weight: 600;
-
-  /* Faint horizontal ruling, a field notebook. Kept at 4.5% alpha on a
-     34px rhythm - visible as texture, never as stripes. */
-  --page-bg: repeating-linear-gradient(180deg, rgba(25, 34, 42, 0.045) 0 1px, transparent 1px 34px), #e9e2d2;
-  --page-bg-color: #e9e2d2;
-  --map-bed: #d9d2c2;
-  --sunk-bg: #e2dbca;
-
-  --ink: #1b242b;
-  --ink-soft: #57646d;
-  --ink-faint: #7f8b93;
-  --ink-on-fill: #fffdf7;
-  --rule: rgba(25, 34, 42, 0.18);
-
-  --voice-bg: #fffdf7;
-  --voice-radius: 2px;
-  --voice-edge: var(--color-accent);
-  --voice-edge-w: 4px;
-  --voice-shadow: 0 1px 0 rgba(25, 34, 42, 0.22), 0 16px 28px -18px rgba(25, 34, 42, 0.5);
-
-  --panel-bg: #fffdf7;
-  --panel-ink: #1b242b;
-  --panel-rule: rgba(25, 34, 42, 0.24);
-  --panel-radius: 2px;
-  --panel-shadow: 0 2px 0 rgba(25, 34, 42, 0.10);
-  --panel-hover: rgba(25, 34, 42, 0.07);
-
-  --nav-bg: #19222a;
-  --nav-ink: #f3efe3;
-  --nav-ink-soft: rgba(243, 239, 227, 0.70);
-  --nav-sub-bg: #243039;
-  --nav-rule: rgba(243, 239, 227, 0.16);
-  --nav-marker: var(--color-secondary);
-  /* #19222a on #e67e22 = 5.65:1 */
-  --nav-cta-ink: #19222a;
-
-  /* A cyan cast over the graphite, so the cover photo reads as a plate in
-     a report rather than a hero image. */
-  --hero-scrim: linear-gradient(180deg, rgba(25, 34, 42, 0.26) 0%, rgba(22, 40, 50, 0.58) 50%, rgba(17, 52, 66, 0.82) 78%, rgba(14, 58, 74, 0.90) 100%);
-  --hero-ink: #f7f4ea;
-
-  --keyline-tint: transparent;
-  --keyline-edge: var(--color-primary);
-  --keyline-ink: #141c22;
-
-  --footer-bg: #19222a;
-  --footer-ink: #f0ebdd;
-
-  --risk: #b4452a;
-  --focus: #1c6b8c;
-  --scrim: rgba(25, 34, 42, 0.58);
-  --backdrop: rgba(18, 25, 31, 0.94);
 }
 
 /* =====================================================================
@@ -1111,6 +930,7 @@ body.media-pos-none #media-sidecar {
   margin: 1.2rem 0 0.35rem;
   padding: 0.1rem 0 0.1rem 1.05rem;
   border-left: 3px solid var(--keyline-edge);
+  border-radius: 0 var(--voice-radius) var(--voice-radius) 0;
   background: var(--keyline-tint);
   color: var(--keyline-ink);
   font-family: var(--font-heading);
@@ -1119,22 +939,6 @@ body.media-pos-none #media-sidecar {
   letter-spacing: var(--display-tracking);
   line-height: 1.42;
   text-wrap: pretty;
-}
-
-/* The tinted variant needs real padding or the fill hugs the glyphs. */
-html[data-theme="serpentine"] .chapter-content .key-line {
-  padding: 0.8rem 1rem 0.85rem 1.05rem;
-  border-radius: 0 var(--voice-radius) var(--voice-radius) 0;
-}
-
-/* A finding in a report: ruled above and below, indented from the margin,
-   rather than hung off a single edge. */
-html[data-theme="fieldbook"] .chapter-content .key-line {
-  margin: 1.3rem 0 0.5rem;
-  padding: 0.75rem 0 0.8rem;
-  border-left: none;
-  border-top: 1px solid var(--ink);
-  border-bottom: 1px solid var(--rule);
 }
 
 .chapter-content img {

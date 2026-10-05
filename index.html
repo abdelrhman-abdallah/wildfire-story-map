@@ -5,17 +5,21 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Homestead Valley Wildfire StoryMap â€” Prototype</title>
 
-  <!-- A theme is more than a palette here: each one sets the page background,
+  <!-- A theme is more than a palette here: it sets the page background,
        surface treatment, hero scrim and nav colours through a block of custom
-       properties keyed on html[data-theme]. story.js sets that attribute, but
-       it can only do so after chapters.json has loaded - which would mean a
-       reader on the dark Serpentine theme gets a flash of the light default
-       first. This guesses the attribute from the same two sources story.js
-       checks first (?theme=, then the saved preference) so the very first
-       paint is already the right theme. story.js remains authoritative. -->
+       properties. Serpentine is the only registered theme and its set is
+       :root in css/style.css, so there is nothing to guess today and this
+       runs as a no-op. It stays because story.js can only set
+       html[data-theme] after chapters.json has loaded: the moment a second
+       theme is registered, a reader whose saved preference is the non-default
+       one would get a flash of Serpentine first. This guesses the attribute
+       from the same two sources story.js checks (?theme=, then the saved
+       preference) so the very first paint is already right. Add new theme
+       names to `known` alongside the chapters.json entry; story.js remains
+       authoritative. -->
   <script>
     (function () {
-      var known = ["ember", "fog", "serpentine", "fieldbook"];
+      var known = ["serpentine"];
       var name = null;
       try {
         name = new URLSearchParams(location.search).get("theme")
@@ -31,13 +35,15 @@
        and the Google Fonts URL that serves it; applyTheme() in js/story.js
        injects that stylesheet when the theme is applied. Only the default
        pairing is loaded statically here, so first paint isn't waiting on
-       fonts the reader may never see. -->
+       fonts the reader may never see. This must stay in step with
+       Serpentine's fontsHref and the --font-heading / --font-body pair on
+       :root, or the page paints in a fallback face and reflows. -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Noto+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Chivo:wght@400;600;700&family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;1,7..72,400&display=swap" rel="stylesheet" />
 
   <link href="https://unpkg.com/maplibre-gl@^4/dist/maplibre-gl.css" rel="stylesheet" />
-  <link href="css/style.css?v=45" rel="stylesheet" />
+  <link href="css/style.css?v=47" rel="stylesheet" />
 </head>
 <body>
 
@@ -97,6 +103,6 @@
   <footer id="footer"></footer>
 
   <script src="https://unpkg.com/maplibre-gl@^4/dist/maplibre-gl.js"></script>
-  <script src="js/story.js?v=45"></script>
+  <script src="js/story.js?v=47"></script>
 </body>
 </html>

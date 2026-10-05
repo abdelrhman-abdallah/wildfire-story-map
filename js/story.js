@@ -394,7 +394,7 @@ const HOMESTEAD_BOUNDARY_STYLES = {
   // Resolved on read (not at module load) so the highlight tracks the active
   // theme's primary even when the reader switches theme mid-story.
   get marin() {
-    const color = themeColor("primary", "#c0392b");
+    const color = themeColor("primary", "#4ca08c");
     return { fillColor: color, fillOpacity: 0.55, lineColor: color, lineWidth: 2.5 };
   },
   default: { fillColor: "#000000", fillOpacity: 0.08, lineColor: "#000000", lineWidth: 2 },
@@ -987,9 +987,11 @@ function resolveThemeName(config) {
 }
 
 // Each theme names its own Google Fonts pairing. Rather than making every
-// visitor download all four pairings up front, the stylesheet for a theme is
+// visitor download every registered pairing up front, a theme's stylesheet is
 // injected the first time that theme is applied (index.html statically loads
-// only the default pairing, so first paint is never blocked).
+// only the default pairing, so first paint is never blocked). With Serpentine
+// the sole registered theme this is a no-op - its pairing IS the static one -
+// but it keeps adding a second theme a chapters.json edit, not a code change.
 function ensureThemeFonts(href) {
   if (!href) return;
   const existing = document.querySelector(`link[data-theme-font="${href}"]`);
@@ -1004,8 +1006,9 @@ function ensureThemeFonts(href) {
 // The five map-facing colours live in chapters.json because MapLibre reads
 // them back through themeColor(). Everything else a theme changes - page
 // background, surface treatment, scrim, nav, rules - is a block of custom
-// properties under html[data-theme="..."] in the stylesheet, which is why the
-// theme's *name* has to land on the root element too.
+// properties in the stylesheet, which is why the theme's *name* has to land
+// on the root element too: Serpentine's set is :root itself, and any theme
+// added later overrides it from an html[data-theme="..."] block.
 function applyTheme(theme, name) {
   if (!theme) return;
   const root = document.documentElement;
@@ -1039,7 +1042,7 @@ const COMMUNITY_CENTER_POINT_URL = "data/home_stead_community_center.json";
 const COMMUNITY_CENTER_ICON_ID = "community-center-pin";
 
 function communityCenterColor() {
-  return themeColor("secondary", "#2c3e91");
+  return themeColor("secondary", "#dd8a3e");
 }
 
 // Draws a Material-style "place" teardrop into an offscreen canvas and hands
@@ -1122,8 +1125,8 @@ function ensureCommunityCenterIcon(map) {
 function explorerBlockLineColor() {
   return [
     "case",
-    ["boolean", ["feature-state", "selected"], false], themeColor("secondary", "#e67e22"),
-    themeColor("accent", "#2c3e91")
+    ["boolean", ["feature-state", "selected"], false], themeColor("secondary", "#dd8a3e"),
+    themeColor("accent", "#5f9ec9")
   ];
 }
 
@@ -1139,9 +1142,9 @@ function restyleMapForTheme() {
       if (instance.getLayer(layerId)) instance.setPaintProperty(layerId, prop, value);
     };
     setPaint("explorer-blocks-line", "line-color", explorerBlockLineColor());
-    setPaint("explorer-blocks-label", "text-color", themeColor("dark", "#1c1c1c"));
-    setPaint("contours-label", "text-halo-color", themeColor("light", "#fdf6f0"));
-    setPaint("explorer-contours-label", "text-halo-color", themeColor("light", "#fdf6f0"));
+    setPaint("explorer-blocks-label", "text-color", themeColor("dark", "#0d1917"));
+    setPaint("contours-label", "text-halo-color", themeColor("light", "#e9f1ee"));
+    setPaint("explorer-contours-label", "text-halo-color", themeColor("light", "#e9f1ee"));
   });
   // The pin is a drawn bitmap, not a paint property, so it has to be
   // re-rendered at the new accent rather than re-set. Only the scroll map
@@ -2956,7 +2959,7 @@ function initExplorerMap() {
             "text-ignore-placement": true
           },
           paint: {
-            "text-color": themeColor("dark", "#1c1c1c"),
+            "text-color": themeColor("dark", "#0d1917"),
             "text-halo-color": "#ffffff",
             "text-halo-width": 1.2
           }
@@ -3075,7 +3078,7 @@ function addExplorerThematicLayers(map) {
     },
     paint: {
       "text-color": "#5c4826",
-      "text-halo-color": themeColor("light", "#fdf6f0"),
+      "text-halo-color": themeColor("light", "#e9f1ee"),
       "text-halo-width": 1.4
     }
   });
@@ -3477,7 +3480,7 @@ function initMap(chapters, layerBounds) {
       },
       paint: {
         "text-color": "#5c4826",
-        "text-halo-color": themeColor("light", "#fdf6f0"),
+        "text-halo-color": themeColor("light", "#e9f1ee"),
         "text-halo-width": 1.4
       }
     });
@@ -3514,7 +3517,9 @@ function initMap(chapters, layerBounds) {
       paint: { "line-color": "#000000", "line-width": 2 }
     });
 
-    buildWindArrows(map, layerBounds.homestead);
+    try { buildWindArrows(map, layerBounds.homestead); }
+    catch (e) { window.__windErr = String(e && e.stack || e); }
+    window.__windBuilt = windArrowElements.length;
 
     // The arrows are a fixed pixel size on a map panel that is not, so the
     // number that fits changes with the window.
