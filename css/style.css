@@ -620,8 +620,9 @@ body.map-pos-none #map {
    to dock the same way and the two were mutually exclusive; the map has
    since moved into a full-width band inside its own chapter, which frees
    a map chapter to have photographs too. The one place they would still
-   collide - the panel sitting over the band - is resolved by
-   body.map-stage-onscreen at the bottom of this section.
+   collide - the panel sitting over the band - is resolved in JS: the band
+   is a region that owns no media, so it docks the panel to "none" for as
+   long as it is the bigger thing on screen (see setupMediaRegions()).
 ===================================================================== */
 #media-sidecar {
   position: fixed;
@@ -665,36 +666,6 @@ body.media-pos-full #media-sidecar {
 }
 
 body.media-pos-none #media-sidecar {
-  opacity: 0;
-  pointer-events: none;
-}
-
-/* --- Yield rules. Both have to come after the body.media-pos-* rules
-   above: they carry the same specificity (one id, one class, one type), so
-   source order is the only thing that decides them. --- */
-
-/* The map is a full-width band IN the page; this panel is pinned to the
-   VIEWPORT. On a chapter that has both, the panel would sit over the
-   right-hand 58% of the map for as long as the band is on screen.
-
-   Letting the map simply cover it does not work: .chapter-map-stage is
-   deliberately transparent so the page shows through the --map-frame-pad
-   inset that makes the map read as a framed exhibit, and the panel would
-   show through that gap as a band of photograph running around the frame.
-
-   So the panel yields while any stage is on screen, and comes back as the
-   reader scrolls down into the chapter's narrative. Class maintained by
-   setupMapStageGuard(). */
-body.map-stage-onscreen #media-sidecar {
-  opacity: 0;
-  pointer-events: none;
-}
-
-/* The Block Explorer is a plain in-flow section, not a .chapter, so
-   placeMediaForChapter() never runs for it and the panel would hang over
-   it still showing the last chapter's photograph. Toggled by the observer
-   in initExplorerObserver(). */
-body.explorer-active #media-sidecar {
   opacity: 0;
   pointer-events: none;
 }
@@ -920,8 +891,9 @@ body.explorer-active #media-sidecar {
    panel as everyone else's, and because this section is display:block the
    left/right offset has to be re-applied to .chapter-stage-text, which is
    the flex container the card actually sits in. The panel stays hidden
-   while the band itself is on screen - see body.map-stage-onscreen - so
-   the reader gets the ground first and the photograph second.
+   while the band owns the screen - the band is its own media region, see
+   setupMediaRegions() - so the reader gets the ground first and the
+   photograph second.
 ===================================================================== */
 .chapter.chapter-stacked {
   display: block;

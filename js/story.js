@@ -983,7 +983,7 @@ function normalizeMedia(chapter) {
 // This is a sibling of "mapPosition" in the data but independent of it: the
 // map is a full-width band inside the chapter and no longer competes for a
 // side. Where the two would collide - the panel sitting over the band while
-// it is on screen - is handled at scroll time by setupMapStageGuard(), not
+// it is on screen - is handled at scroll time by setupMediaRegions(), not
 // here.
 const MEDIA_POSITIONS = ["left", "right", "full", "none"];
 
@@ -2014,10 +2014,12 @@ function updateLegend(activeLayers) {
 }
 
 // --- Media sidecar ----------------------------------------------------
-// Fills and docks #media-sidecar for the active chapter: a panel pinned to
-// the viewport that holds that chapter's carousel while the reader is in
-// it, and swaps its contents as they move on. Which side it takes, if any,
-// comes from mediaPositionFor() - see there for the values.
+// Fills and docks #media-sidecar for the chapter that currently owns the
+// screen: a panel pinned to the viewport that holds that chapter's
+// carousel while the reader is in it, and swaps its contents as they move
+// on. Which side it takes, if any, comes from mediaPositionFor() - see
+// there for the values. Called with null to hide it, for the stretches of
+// the page that belong to no chapter at all (see setupMediaRegions()).
 //
 // Tracks whichever side the panel was docked to for the previously-active
 // chapter, so a content swap only gets the extra crossfade treatment when
@@ -2025,12 +2027,13 @@ function updateLegend(activeLayers) {
 // sides, its own opacity transition (see body.media-pos-* in the CSS)
 // already makes that change smooth.
 let lastMediaDockPosition = null;
+let pendingMediaSwap = null;
 
 function placeMediaForChapter(chapter) {
   const sidecar = document.getElementById("media-sidecar");
   if (!sidecar) return;
 
-  const position = mediaPositionFor(chapter);
+  const position = chapter ? mediaPositionFor(chapter) : "none";
 
   document.body.classList.remove(
     "media-pos-left",
@@ -2050,6 +2053,14 @@ function placeMediaForChapter(chapter) {
     }
   };
 
+  // A crossfade left half-finished by a faster change of owner would put
+  // the previous chapter's media back and strand the panel at opacity 0.
+  if (pendingMediaSwap !== null) {
+    window.clearTimeout(pendingMediaSwap);
+    pendingMediaSwap = null;
+    sidecar.classList.remove("media-sidecar-swapping");
+  }
+
   if (dockPositionChanged || position === "none") {
     swapContent();
   } else {
@@ -2058,7 +2069,8 @@ function placeMediaForChapter(chapter) {
     // straight into the next) - crossfade the swap instead of an
     // abrupt cut from one image/video straight to another.
     sidecar.classList.add("media-sidecar-swapping");
-    window.setTimeout(() => {
+    pendingMediaSwap = window.setTimeout(() => {
+      pendingMediaSwap = null;
       swapContent();
       requestAnimationFrame(() => sidecar.classList.remove("media-sidecar-swapping"));
     }, 220);
@@ -2733,12 +2745,11 @@ function addExplorerThematicLayers(map) {
 //    It is a plain in-flow section, not a .chapter, so setupScrollTriggers()'
 //    observer never fires for it and updateToolbar() never reaches it.
 //
-//    It also sets body.explorer-active, which hides the docked media panel.
-//    The story map and its legend take care of themselves - they ride in
-//    their own chapter's band and have scrolled away by the time the reader
-//    gets here - but the sidecar is pinned to the viewport, so without this
-//    it would hang over the Explorer still showing the last chapter's
-//    photograph.
+//
+// The docked media panel used to be hidden from here too. It is now one of
+// the regions in setupMediaRegions(), which owns no media and so hides the
+// panel once the Explorer - rather than the chapter above it - is the
+// bigger thing on screen.
 function initExplorerObserver() {
   const section = document.getElementById("block-explorer");
   if (!section) return;
@@ -2764,10 +2775,6 @@ function initExplorerObserver() {
         // cross the main observer's threshold calls updateToolbar(), which
         // re-marks its own section pill.
         if (entry.isIntersecting) showToolbarSection(EXPLORER_NAV_ID);
-        // The sidecar, by contrast, has to be released explicitly - nothing
-        // else will turn it back on, because placeMediaForChapter() only
-        // runs when a CHAPTER activates and this section is not one.
-        document.body.classList.toggle("explorer-active", entry.isIntersecting);
       });
     },
     { threshold: 0.35 }
@@ -3207,10 +3214,15 @@ function applyChapterToMap(map, chapter) {
 }
 
 function setupScrollTriggers(map, chapters, layerBounds) {
+  // The docked media panel is deliberately NOT driven from here. A map
+  // chapter has to claim the map the instant its band touches the bottom of
+  // the viewport, or the reader watches an empty stage scroll past - but
+  // that moment comes a whole screen before they have finished the section
+  // above, so it is far too early to take that section's photograph away.
+  // The panel follows the regions in setupMediaRegions() instead.
   const activate = (chapter) => {
     currentChapterId = chapter.id;
     placeMapForChapter(map, chapter);
-    placeMediaForChapter(chapter);
     flyToChapter(map, chapter, layerBounds);
     applyChapterToMap(map, chapter);
     updateLegend(chapter.layers);
@@ -3274,48 +3286,125 @@ function setupScrollTriggers(map, chapters, layerBounds) {
     .forEach((el) => observer.observe(el));
 
   setupFooterRelease();
-  setupMapStageGuard();
+  setupMediaRegions(chapters);
 }
 
-// --- Map stage guard ------------------------------------------------------
-// The two big visual elements now live in different coordinate systems: the
-// map is a full-width band IN the page, the media sidecar is pinned to the
-// VIEWPORT. On a chapter that has both, the sidecar would be sitting over
-// the right-hand 58% of the map for as long as the band is on screen.
+// --- Media regions --------------------------------------------------------
+// Which stretch of the page each chapter's photographs belong to. The
+// docked panel shows the media of whichever region covers most of the
+// screen, so a photograph appears as the reader scrolls into its region and
+// stays put until the next region takes over.
 //
-// Hiding it behind the map is not an option: .chapter-map-stage is
-// deliberately transparent so the page shows through the --map-frame-pad
-// inset that makes the map read as a framed exhibit. The sidecar would show
-// through that gap, as a band of photograph running around the map's frame.
+// Two kinds of region, laid end to end down the story:
 //
-// So the sidecar yields. While any map stage is intersecting the viewport,
-// body.map-stage-onscreen fades it out; scrolling on past the band into the
-// chapter's narrative brings it back beside the text. That also gives the
-// reader the two things in sequence - here is the ground, now here is the
-// photograph of it - instead of making them compete for one screen.
+//   * a chapter's own stretch - the whole section for a plain chapter, but
+//     only the narrative BELOW the band for a map chapter;
+//   * a stretch that owns no media and therefore hides the panel: a map
+//     band, and the Block Explorer (not a chapter at all, so nothing else
+//     would ever release the panel over it).
 //
-// Counted rather than toggled from a single entry: a short stage and a tall
-// window can put two stages on screen at once, and a plain boolean toggle
-// would let the one leaving switch the class back off while the one
-// arriving still needs it.
-function setupMapStageGuard() {
-  const stages = document.querySelectorAll(".chapter-map-stage");
-  if (!stages.length) return;
+// The band has to be its own region because the two big visuals live in
+// different coordinate systems - the map is a full-width band IN the page,
+// the panel is pinned to the VIEWPORT - so on a chapter with both, the
+// panel would sit over the right-hand 58% of the map. Hiding it behind the
+// map is not an option either: .chapter-map-stage is deliberately
+// transparent so the page shows through the --map-frame-pad inset that
+// makes the map read as a framed exhibit, and the panel would show through
+// that gap as a band of photograph running around the frame. So the panel
+// yields while the band owns the screen, which also gives the reader the
+// two things in sequence - here is the ground, now here is the photograph
+// of it - instead of making them compete for one screen.
+//
+// The panel used to be driven by chapter activation plus a guard that
+// fired on a map stage merely touching the viewport's bottom edge. A
+// section between two maps is taller than the screen, so the next band
+// reached that edge while the reader was only halfway down the text - and
+// the photograph both swapped away and faded out a full screen early.
+let mediaRegions = [];
+let currentMediaOwnerId;
 
-  const onScreen = new Set();
+function buildMediaRegions(chapters) {
+  const regions = [];
 
-  const observer = new IntersectionObserver(
-    (entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) onScreen.add(entry.target);
-        else onScreen.delete(entry.target);
-      });
-      document.body.classList.toggle("map-stage-onscreen", onScreen.size > 0);
-    },
-    { threshold: 0 }
-  );
+  // One query so the regions come out in document order, which is what
+  // makes a map chapter's band and narrative land in the right sequence.
+  document.querySelectorAll("#story .chapter, #story #block-explorer").forEach((el) => {
+    if (el.id === "block-explorer") {
+      regions.push({ el, chapter: null });
+      return;
+    }
 
-  stages.forEach((el) => observer.observe(el));
+    const chapter = chapters.find((c) => c.id === el.id) || null;
+    const stage = el.querySelector(".chapter-map-stage");
+    const text = el.querySelector(".chapter-stage-text");
+
+    if (stage && text) {
+      regions.push({ el: stage, chapter: null });
+      regions.push({ el: text, chapter });
+    } else {
+      regions.push({ el, chapter });
+    }
+  });
+
+  return regions;
+}
+
+// Measured live rather than from cached document offsets: chapters move as
+// web fonts land, as the carousel's images decode and as the sticky
+// toolbar wraps, and a cache that misses any of those hands the panel to a
+// region the reader is not in. These are all reads with no writes between
+// them, so they are served from one layout pass.
+//
+// The panel starts below the fixed header + toolbar, so that strip is not
+// part of the screen the regions are competing for.
+function resolveMediaOwner() {
+  const top =
+    parseFloat(
+      getComputedStyle(document.documentElement).getPropertyValue("--nav-offset")
+    ) || 0;
+  const bottom = window.innerHeight;
+
+  let owner = null;
+  let ownerVisible = 0;
+
+  mediaRegions.forEach((region) => {
+    const rect = region.el.getBoundingClientRect();
+    const visible = Math.min(rect.bottom, bottom) - Math.max(rect.top, top);
+    if (visible > ownerVisible) {
+      ownerVisible = visible;
+      owner = region;
+    }
+  });
+
+  return owner;
+}
+
+function updateMediaForScroll() {
+  // Nothing legitimately scrolls while a map is fullscreen, but going
+  // fullscreen does change the window height - and the resize that follows
+  // would hand the panel to a region the reader never scrolled to. The
+  // chapter they asked to see full screen is the one to stay on.
+  if (document.fullscreenElement) return;
+
+  const owner = resolveMediaOwner();
+  const chapter = owner ? owner.chapter : null;
+  const ownerId = chapter ? chapter.id : null;
+
+  if (ownerId === currentMediaOwnerId) return;
+  currentMediaOwnerId = ownerId;
+  placeMediaForChapter(chapter);
+}
+
+function setupMediaRegions(chapters) {
+  mediaRegions = buildMediaRegions(chapters);
+  if (!mediaRegions.length) return;
+
+  updateMediaForScroll();
+
+  // resize covers leaving fullscreen and a rotate/window drag, both of
+  // which can change which region owns the screen without a scroll.
+  window.addEventListener("scroll", updateMediaForScroll, { passive: true });
+  window.addEventListener("resize", updateMediaForScroll);
 }
 
 // --- Footer release -------------------------------------------------------

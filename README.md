@@ -234,32 +234,43 @@ Below 820 px there is no "side" to dock to: the panel becomes a full-width
 46vh band at the top of the viewport and the card is padded down to clear
 it.
 
-#### Two things that make the panel yield
+#### What the panel follows: media regions
 
-The panel is pinned to the *viewport*; the map band is in the *page*. Both
-want the same pixels, and the panel can't simply be painted over, because
-`.chapter-map-stage` is deliberately transparent (that's what makes the
-`--map-frame-pad` inset read as a frame) — the photograph would show through
-as a band running around the map. So:
+`setupMediaRegions()` cuts the story into regions laid end to end, and the
+panel shows the media of whichever one covers most of the screen:
 
-- `body.map-stage-onscreen` — set by `setupMapStageGuard()` while *any* map
-  band is intersecting the viewport. The panel hides, and comes back as the
-  reader scrolls down into that chapter's narrative: ground first,
-  photograph second. The guard counts intersecting stages in a `Set` rather
-  than tracking a boolean, so during a hand-off between two bands the one
-  leaving can't clear the class out from under the one arriving.
-- `body.explorer-active` — the Block Explorer is a plain section, not a
-  `.chapter`, so `placeMediaForChapter()` never runs for it and the panel
-  would hang over it still showing the previous chapter's photograph.
+- a plain chapter owns its whole section;
+- a map chapter owns only its narrative, `.chapter-stage-text`;
+- a map band and the Block Explorer own **no** media, so whenever one of
+  them is the biggest thing on screen the panel docks to `none` and fades
+  out.
 
-Both rules live *after* the `body.media-pos-*` dock rules in
-`css/style.css` and must stay there: they tie on specificity (one id, one
-class, one type), so source order is the only thing deciding them.
+The band has to be its own region because the panel is pinned to the
+*viewport* while the band is in the *page*. Both want the same pixels, and
+the panel can't simply be painted over: `.chapter-map-stage` is
+deliberately transparent (that's what makes the `--map-frame-pad` inset
+read as a frame), so the photograph would show through as a band running
+around the map. Yielding to the band also gives the reader the two things
+in sequence — ground first, photograph second.
 
-`setupFooterRelease()` is the third case — it lets the panel go at the very
-bottom of the page so the footer isn't read through it. `#map` is
-deliberately *not* in that function any more, because it scrolls away with
-its own chapter.
+Regions are measured live on every scroll, not cached. Chapters move as
+fonts land, as carousel images decode and as the sticky toolbar wraps, and
+a cache that misses any of those hands the panel to the wrong region. The
+measurements are reads with no writes between them, so they cost one layout
+pass.
+
+This is deliberately *not* driven by the chapter-activation observers in
+`setupScrollTriggers()`. A map chapter has to claim the shared map the
+instant its band touches the bottom of the viewport or the reader watches
+an empty stage scroll past — but a section between two maps is taller than
+the screen, so that moment arrives while the reader is only halfway down
+the text above. Driving the panel from it blanked the photograph a full
+screen early, which is exactly the bug this replaced.
+
+`setupFooterRelease()` is the one other thing that moves the panel — it
+lets it go at the very bottom of the page so the footer isn't read through
+it. `#map` is deliberately *not* in that function any more, because it
+scrolls away with its own chapter.
 
 ### Per-chapter `"icon"`
 

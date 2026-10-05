@@ -37,7 +37,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Noto+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet" />
 
   <link href="https://unpkg.com/maplibre-gl@^4/dist/maplibre-gl.css" rel="stylesheet" />
-  <link href="css/style.css?v=35" rel="stylesheet" />
+  <link href="css/style.css?v=36" rel="stylesheet" />
 </head>
 <body>
 
@@ -89,13 +89,13 @@
 
        Unlike #map above, this one is still viewport-pinned, so it is also
        the only element setupFooterRelease() has to let go of at the end of
-       the page. It yields to a map band when one is on screen - see
-       setupMapStageGuard(). -->
+       the page. It yields to a map band once the band owns the screen - see
+       setupMediaRegions(). -->
   <div id="media-sidecar"></div>
   <div id="story"></div>
   <footer id="footer"></footer>
 
   <script src="https://unpkg.com/maplibre-gl@^4/dist/maplibre-gl.js"></script>
-  <script src="js/story.js?v=35"></script>
+  <script src="js/story.js?v=36"></script>
 </body>
 </html>
